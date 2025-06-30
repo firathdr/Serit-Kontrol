@@ -1,0 +1,6 @@
+.venv/
+videos/video.mp4
+videos/video1.mp4
+models/yolov8n.pt
+models/yolov8s.pt
+version_test.py
