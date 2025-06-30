@@ -18,10 +18,7 @@ while True:
     if not ret:
         break
 
-    # 4️⃣ Tahmini CUDA cihazında yap
-    results = model(frame, device='cuda')  # GPU kullan
-
-    # 5️⃣ Sonuçları çiz
+    results = model(frame, device='cuda')
     annotated_frame = results[0].plot()
 
     cv2.imshow("YOLOv8 CUDA", annotated_frame)
