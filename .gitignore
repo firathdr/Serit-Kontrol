@@ -1,6 +1,6 @@
 .venv/
-videos/video.mp4
-videos/video1.mp4
-models/yolov8n.pt
-models/yolov8s.pt
+videos/*.mp4
+!videos/.gitkeep
+models/*.pt
+!models/.gitkeep
 version_test.py
