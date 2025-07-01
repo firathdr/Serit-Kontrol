@@ -9,6 +9,7 @@ class ObjectDetector:
     def detect(self, frame, conf: float = 0.3, imgsz=640):
         results = self.model.predict(
             source=frame,
+            classes=[2, 3, 5, 7], #işleme alıncak sınıflar,idler {2: 'car', 3: 'motorcycle',  5: 'bus', 7: 'truck' }
             imgsz=imgsz,
             conf=conf,
             verbose=False,

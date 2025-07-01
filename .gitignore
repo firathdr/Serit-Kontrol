@@ -4,3 +4,4 @@ videos/*.mp4
 models/*.pt
 !models/.gitkeep
 version_test.py
+core/deep_sort_pytorch
