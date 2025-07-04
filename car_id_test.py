@@ -19,7 +19,7 @@ while True:
         break
 
 
-    results = detector.detect(frame, conf=0.3, imgsz=640)
+    results = detector.detect(frame, conf=0.3, imgsz=1088)
 
     detections = []  # SORT format [x1, y1, x2, y2, conf]
 
@@ -45,6 +45,11 @@ while True:
         cv2.putText(frame, f'ID {track_id}', (x1, y1 - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
 
+    #width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+
+    # Görüntüyü yeniden boyutlandır
+    resized_img = cv2.resize(frame, (1000, 1000))
     cv2.imshow("YOLOv8 + SORT Tracking", frame)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
