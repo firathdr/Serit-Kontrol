@@ -5,6 +5,14 @@ from core.detector import ObjectDetector
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from core.arac_yol import Yol_Secici
 
+#import subprocess
+# yt-dlp -g 'https://www.youtube.com/watch?v=ByED80IKdIU&ab_channel=CityofColdwaterMI'  #canlı video kullanımı için
+
+stream_url = """https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/1751913359/ei/L79raKO1HdrlxN8Pj6DmOQ/ip/178.233.41.211/id/ByED80IKdIU.3/itag/96/source/yt_live_broadcast/requiressl/yes/ratebypass/yes/live/1/sgoap/gir%3Dyes%3Bitag%3D140/sgovp/gir%3Dyes%3Bitag%3D137/rqh/1/hls_chunk_host/rr7---sn-8vq54voxu-5qce.googlevideo.com/xpc/EgVo2aDSNQ%3D%3D/playlist_duration/30/manifest_duration/30/bui/AY1jyLPn8YrjRJnhlyaomDJ-waqYE7_cCzHR_FLpBiQggdY8XwK93OQpoV263ZEYHujDoGnB4XaQrH6c/spc/l3OVKcrjkfpX8CZh1ztWY9jQ1eAV1TfJXy62CS_W6TxxQDTCdrgF7JjOc8f3J
+e_Edg2n51bBt7k/vprv/1/playlist_type/DVR/initcwndbps/1967500/met/1751891761,/mh/jK/mm/44/mn/sn-8vq54voxu-5qce/ms/lva/mv/m/mvi/7/pl/24/rms/lva,lva/dover/11/pacing/0/keepalive/yes/fex
+p/51355912/mt/1751891572/sparams/expire,ei,ip,id,itag,source,requiressl,ratebypass,live,sgoap,sgovp,rqh,xpc,playlist_duration,manifest_duration,bui,spc,vprv,playlist_type/sig/AJfQd
+SswRQIgKvAMZu2YvF6i1BGPfTzf0hjhPPMrV6qfGXJ7ab_IfVUCIQDA7IhIjWj1XFZyYeCvq54ousIVQbwpc_lPNZXz0vjNxA%3D%3D/lsparams/hls_chunk_host,initcwndbps,met,mh,mm,mn,ms,mv,mvi,pl,rms/lsig/APaTxxMwRQIhANfrvJbXPahYZkRwJqI-m2tJQnFlS8YeTn4Y4VhJo3UuAiArlDt0owuBbXOtQLjzDdWqUIcvyfKBx9ppw-MeNRnx4w%3D%3D/playlist/index.m3u8"""  # yt-dlp çıktısı
+
 model_path = "models/yolov8m.pt"
 video_path = "videos/video1.mp4"
 mask_path = "masks/mask1.png"
@@ -16,7 +24,7 @@ if roi_mask.max() > 1:
 detector = ObjectDetector(model_path, device="cuda")
 tracker = DeepSort(max_age=15, n_init=2, nms_max_overlap=0.7, max_cosine_distance=0.2)
 
-cap = cv2.VideoCapture(video_path)
+cap = cv2.VideoCapture(video_path) # + cv2.CAP_FFMPEG =canlı videolar için eklenir
 
 genislik = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 yukseklik = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -88,6 +96,13 @@ while True:
                                 (cx, cy), (prev_cx, prev_cy), corridor.exit_line):
                                 corridor.exited_ids.add(track_id)
                                 print(f" {track_id} çıkışını {corridor.exit_line} yoluna yaptı")
+                            # deneysel kod, doğruluğu düşük.
+                            #    for other_corridor in yol_secim.corridors: #aynı giriş farklı çıkış kontrol
+                            #        if other_corridor is not corridor:
+                            #            if track_id in other_corridor.entered_ids and track_id not in other_corridor.exited_ids:
+                            #                other_corridor.exited_ids.add(track_id)
+                            #                print(
+                            #                    f" {track_id} diğer Corridor {other_corridor.id} için de çıkış işaretlendi")
 
                 track_memory[track_id] = (cx, cy)
 

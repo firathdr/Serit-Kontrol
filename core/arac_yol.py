@@ -13,6 +13,8 @@ class Corridor:
         self.exit_line = cikis_yolu
         self.entered_ids = set()
         self.exited_ids = set()
+        self.linked_corridors = []  # diğer koridor id'leri (deneysel)
+
 
 class Yol_Secici:
     def __init__(self):
