@@ -5,3 +5,4 @@ models/*.pt
 !models/.gitkeep
 version_test.py
 core/deep_sort_pytorch
+database/mysql.json
