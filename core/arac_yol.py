@@ -21,22 +21,35 @@ class Yol_Secici:
         self.corridors = []  # tum koridor ciftleri
         self.step = 0  # 0: entry çiz, 1: exit çiz
 
-    def mouse_callback(self, event, x, y, flags, param):
+    """def mouse_callback(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
             if len(self.temp_points) < 2:
                 self.temp_points.append((x, y))
-                print(f"Point added: {x}, {y}")
             if len(self.temp_points) == 2:
                 new_line = Yol(self.temp_points[0], self.temp_points[1])
                 if self.step == 0:
                     self.current_entry = new_line
                     self.step = 1
-                    print(f"Entry line set: {self.temp_points}")
                 else:
                     corridor_id = len(self.corridors) + 1  #deneysel
                     corridor = Corridor(self.current_entry, new_line, id=corridor_id)#deneysel
                     self.corridors.append(corridor)
-                    print(f"Exit line set: {self.temp_points} -> Corridor created.")
+                    self.step = 0
+                self.temp_points = []"""
+
+    def mouse_callback(self, event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            if len(self.temp_points) < 2:
+                self.temp_points.append((x, y))
+            if len(self.temp_points) == 2:
+                new_line = Yol(self.temp_points[0], self.temp_points[1])
+                if self.step == 0:
+                    self.current_entry = new_line
+                    self.step = 1
+                else:
+                    corridor_id = len(self.corridors) + 1  # deneysel
+                    corridor = Corridor(self.current_entry, new_line, id=corridor_id)  # deneysel
+                    self.corridors.append(corridor)
                     self.step = 0
                 self.temp_points = []
 
@@ -68,7 +81,7 @@ class Yol_Secici:
 
         return sign_curr * sign_prev < 0
 
-    def save_corridors(self, filename="corridors.json"):
+    def save_corridors(self, filename="corridors1.json"):
         corridors_data = []
         for c in self.corridors:
             corridors_data.append({
@@ -86,7 +99,7 @@ class Yol_Secici:
             json.dump(corridors_data, f, indent=4)
         print(f"{len(self.corridors)} secili koridorlar *{filename}* kaydedildi")
 
-    def load_corridors(self, filename="corridors.json"):
+    def load_corridors(self, filename):
         try:
             with open(filename, "r") as f:
                 corridors_data = json.load(f)

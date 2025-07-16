@@ -1,6 +1,9 @@
 import sys
+from operator import truediv
+
 import cv2
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
+
 import os
 
 from PyQt5.QtGui import QOpenGLWindow
@@ -15,6 +18,7 @@ from core.arac_yol import Yol_Secici
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
+
         uic.loadUi("untitled.ui", self)
         self.comboBox = self.findChild(QtWidgets.QComboBox, "comboBox")
         path_model = "../models"
@@ -42,11 +46,28 @@ class MainWindow(QtWidgets.QMainWindow):
             self.comboBox3.clear()
             self.comboBox3.addItems(files3)
 
+        self.comboBox4 = self.findChild(QtWidgets.QComboBox, "comboBox_4")
+        path_corridor = "../corridors"
+        if os.path.exists(path_corridor):
+            files4 = os.listdir(path_corridor)
+            files4 = [f for f in files4 if os.path.isfile(os.path.join(path_corridor, f))]
+            files4.remove(files4[0])
+            self.comboBox4.clear()
+            self.comboBox4.addItems(files4)
+
+
         self.pushButton_6.clicked.connect(self.start_pipeline)
-        #self.pushButton_4.clicked.connect(self.cikis())
+        self.pushButton_4.clicked.connect(self.exit_button)
+        self.pushButton.clicked.connect(self.paused_button)
 
+        self.pushButton_7.clicked.connect(self.fullscreen_button)  #ŞİMDİLİK ÇALIŞMIYOR
 
-        self.label = QtWidgets.QLabel(self.goruntu)
+        self.pushButton_2.clicked.connect(self.mousePressEvent)
+
+        self.label = GoruntuLabel(self.goruntu)
+        self.yol_secici = Yol_Secici()
+
+        #self.label = QtWidgets.QLabel(self.goruntu)
         self.label.setGeometry(0, 0, self.goruntu.width(), self.goruntu.height())
         self.label.setScaledContents(True)
 
@@ -59,18 +80,27 @@ class MainWindow(QtWidgets.QMainWindow):
         model_file = self.comboBox.currentText()
         mask_file = self.comboBox2.currentText()
         video_file = self.comboBox3.currentText()
+        corridor_file= self.comboBox4.currentText()
         model_path = os.path.join("../models", model_file)
         mask_path = os.path.join("../masks", mask_file)
         video_path = os.path.join("../videos", video_file)
+        corridor_path = os.path.join("../corridors", corridor_file)
+        self.yol_secici.load_corridors(corridor_path)
+
 
         detector = ObjectDetector(model_path, device="cuda")
         tracker = DeepSort(max_age=15, n_init=2)
         yol_secici = Yol_Secici()
-
-        #yol_secici.load_corridors()
+        yol_secici.load_corridors(corridor_path)
 
         self.pipeline = Pipeline(model_path, mask_path, video_path, detector, tracker, yol_secici)
         self.paused = False
+
+    def fullscreen_button(self):
+        pixmap=self.label.pixmap() #henüz çalışmıyor
+        if pixmap:
+            self.fullscreen=FullscreenWindow(pixmap)
+            self.fullscreen.label.setPixmap(pixmap)
 
     def update_frame(self):
         if not self.paused:
@@ -80,28 +110,65 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pipeline.release()
                 self.close()
                 return
-
             frame = self.pipeline.process_frame(frame)
             self.show_frame(frame)
 
     def show_frame(self, frame):
+        self.yol_secici.draw_corridors(frame)
+
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = frame.shape
         bytes_per_line = ch * w
         qimg = QtGui.QImage(frame.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
         pixmap = QtGui.QPixmap.fromImage(qimg)
         self.label.setPixmap(pixmap)
+
     def gecis_log(self):
         label=QtWidgets.QLabel(self.goruntu)
         yazi=QtWidgets.QLabel(label)
         for idx, corridor in enumerate(self.yol_secim.corridors):
             yazi.setText(str(idx,corridor))
+    def paused_button(self):
+        self.paused = not self.paused
+        if self.paused == True:
+            self.timer.stop()
+        else:
+            self.timer.start()
 
-    def cikis(self):
-        app.closeAllWindows()
+    def exit_button(self):
+        self.pipeline.save_ihlaller()
+        self.pipeline.release()
+        self.close()
+
+
+class GoruntuLabel(QtWidgets.QLabel):
+    def __init__(self,  main_window,parent):
+        super().__init__(parent)
+        self.main_window = main_window
+
+    def mousePressEvent(self, event):
+        x = event.x()
+        y = event.y()
+        print(f"Tıklama konumu: x={x}, y={y}")
+        # MainWindow içindeki yol_secici çağır
+        self.main_window.yol_secici.mouse_callback(
+            cv2.EVENT_LBUTTONDOWN, x, y, True, False
+        )
+
+class FullscreenWindow(QtWidgets.QMainWindow):
+    def __init__(self, pixmap):
+        super().__init__()
+        self.setWindowTitle("Tam Ekran")
+        self.label = GoruntuLabel(self)
+        self.setCentralWidget(self.label)
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setScaledContents(True)
+        self.label.setPixmap(pixmap)
+        self.showFullScreen()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
