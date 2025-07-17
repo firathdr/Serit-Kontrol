@@ -6,15 +6,18 @@ class Pipeline:
         self.detector = detector
         self.tracker = tracker
         self.yol_secim = yol_secici
-
-        self.cap = cv2.VideoCapture(video_path)
-        self.track_memory = {}
+        self.cap = cv2.VideoCapture(video_path)                  #olarak burda yapılması lazım
+        self.track_memory = {}                                   #bu kısmı gui_pyqt den al
         self.ihlaller = []
         self.basarili_gecisler = []
 
         self.roi_mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         if self.roi_mask.max() > 1:
             _, self.roi_mask = cv2.threshold(self.roi_mask, 127, 255, cv2.THRESH_BINARY)
+
+    def pipeline_load(self,yol_secici):
+        yol_secici.load_corridors("../corridors/corridors.json") #koridor yükleme işlemi ayrı
+
 
     def read_frame(self):
         return self.cap.read()
@@ -50,7 +53,6 @@ class Pipeline:
             for idx, corridor in enumerate(self.yol_secim.corridors):
                 if not hasattr(corridor, "id"):
                     corridor.id = idx + 1
-
             if len(self.yol_secim.corridors) > 0:
                 if track_id in self.track_memory:
                     prev_cx, prev_cy = self.track_memory[track_id]
@@ -60,6 +62,7 @@ class Pipeline:
                             if track_id not in corridor.entered_ids:
                                 corridor.entered_ids.add(track_id)
                                 print(f"{track_id} girişini {corridor.id} yoluna yaptı")
+
                         if track_id in corridor.entered_ids and track_id not in corridor.exited_ids:
                             if self.yol_secim.is_crossing_line((cx, cy), (prev_cx, prev_cy), corridor.exit_line):
                                 corridor.exited_ids.add(track_id)
@@ -93,11 +96,12 @@ class Pipeline:
                             print(f"Ihlal: {entered_id} @ {ihlal_zamani:.2f} s (Corridor ID: {corridor.id})")
 
         self.yol_secim.draw_corridors(frame)
+        #y_offset = 10
 
-                #cv2.putText(frame,
-                 #           f'Corridor {corridor.id} Entered: {len(corridor.entered_ids)} Exited: {len(corridor.exited_ids)}',
-                 #           (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                #y_offset += 30
+        #cv2.putText(frame,
+        #           f'Corridor {corridor.id} Entered: {len(corridor.entered_ids)} Exited: {len(corridor.exited_ids)}',
+        #           (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        #y_offset += 30
 
 
         return frame
