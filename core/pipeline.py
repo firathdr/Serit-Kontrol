@@ -2,7 +2,7 @@ import cv2
 import json
 
 class Pipeline:
-    def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici):
+    def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici,ciz_status):
         self.detector = detector
         self.tracker = tracker
         self.yol_secim = yol_secici
@@ -10,7 +10,7 @@ class Pipeline:
         self.track_memory = {}                                   #bu kısmı gui_pyqt den al
         self.ihlaller = []
         self.basarili_gecisler = []
-
+        self.ciz_status = ciz_status
         self.roi_mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         if self.roi_mask.max() > 1:
             _, self.roi_mask = cv2.threshold(self.roi_mask, 127, 255, cv2.THRESH_BINARY)
@@ -18,6 +18,9 @@ class Pipeline:
     def pipeline_load(self,yol_secici):
         yol_secici.load_corridors("../corridors/corridors.json") #koridor yükleme işlemi ayrı
 
+    def cizim_sil(self):
+        self.ciz_status = False
+        self.yol_secim.corridors = []
 
     def read_frame(self):
         return self.cap.read()
@@ -95,15 +98,15 @@ class Pipeline:
                             })
                             print(f"Ihlal: {entered_id} @ {ihlal_zamani:.2f} s (Corridor ID: {corridor.id})")
 
-        self.yol_secim.draw_corridors(frame)
+
+        if self.ciz_status:
+            self.yol_secim.draw_corridors(frame)
         #y_offset = 10
 
         #cv2.putText(frame,
         #           f'Corridor {corridor.id} Entered: {len(corridor.entered_ids)} Exited: {len(corridor.exited_ids)}',
         #           (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         #y_offset += 30
-
-
         return frame
 
     def release(self):

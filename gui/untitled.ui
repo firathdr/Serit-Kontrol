@@ -30,7 +30,7 @@
      </rect>
     </property>
     <property name="mouseTracking">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="tabletTracking">
      <bool>false</bool>
@@ -49,7 +49,7 @@
     <property name="geometry">
      <rect>
       <x>890</x>
-      <y>550</y>
+      <y>580</y>
       <width>161</width>
       <height>51</height>
      </rect>
@@ -88,7 +88,7 @@
     <property name="geometry">
      <rect>
       <x>890</x>
-      <y>630</y>
+      <y>640</y>
       <width>161</width>
       <height>51</height>
      </rect>
@@ -220,6 +220,19 @@
     </property>
     <property name="text">
      <string>TextLabel</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_7">
+    <property name="geometry">
+     <rect>
+      <x>890</x>
+      <y>540</y>
+      <width>161</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Tam ekran</string>
     </property>
    </widget>
   </widget>

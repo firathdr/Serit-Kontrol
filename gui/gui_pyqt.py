@@ -67,9 +67,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_2.clicked.connect(
             lambda: self.yol_secici.save_corridors( os.path.join("../corridors", corridor_file))
         )
-        self.pushButton_5.clicked.connect(
-        lambda: self.pipeline.yol_secim.load_corridors(yol_secici=self)
-)       #bu kısımda hata var koridor yükleme kısmı
+        self.pushButton_3.clicked.connect(self.cizim_sil_button)
+
+        self.pushButton_5.clicked.connect(self.load_corridors_button)
+
+        #bu kısımda hata var koridor yükleme kısmı
 
         #self.label = QtWidgets.QLabel(self.goruntu)
         self.label.setGeometry(0, 0, self.goruntu.width(), self.goruntu.height())
@@ -89,12 +91,10 @@ class MainWindow(QtWidgets.QMainWindow):
         mask_path = os.path.join("../masks", mask_file)
         video_path = os.path.join("../videos", video_file)
         corridor_path = os.path.join("../corridors", corridor_file)
-        yol_secici = Yol_Secici()
 
         detector = ObjectDetector(model_path, device="cuda")
         tracker = DeepSort(max_age=15, n_init=2)
-        print(model_path, mask_path, video_path, detector, tracker, yol_secici)
-        self.pipeline = Pipeline(model_path, mask_path, video_path, detector, tracker, yol_secici)
+        self.pipeline = Pipeline(model_path, mask_path, video_path, detector, tracker, self.yol_secici,ciz_status=True)
         self.paused = False
 
     def fullscreen_button(self):
@@ -140,6 +140,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pipeline.save_ihlaller()
         self.pipeline.release()
         self.close()
+
+    def load_corridors_button(self):
+        corridor_file = self.comboBox4.currentText()
+        corridor_path = os.path.join("../corridors", corridor_file)
+        self.pipeline.yol_secim.load_corridors(corridor_path)
+    def cizim_sil_button(self):
+        self.pipeline.cizim_sil()
 
 class GoruntuLabel(QtWidgets.QLabel):
     def __init__(self,  main_window,parent):

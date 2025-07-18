@@ -81,7 +81,7 @@ class Yol_Secici:
 
         return sign_curr * sign_prev < 0
 
-    def save_corridors(self, filename="corridors1.json"):
+    def save_corridors(self, filename="corridors2.json"):
         corridors_data = []
         for c in self.corridors:
             corridors_data.append({
