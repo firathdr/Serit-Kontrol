@@ -114,11 +114,12 @@ class MainWindow(QtWidgets.QMainWindow):
             frame = self.pipeline.process_frame(frame)
             self.show_frame(frame)
     global frame
+
     def show_frame(self, frame):
         self.yol_secici.draw_corridors(frame)
-
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = frame.shape
+        self.current_frame_shape = (w, h)  # Ekle!
         bytes_per_line = ch * w
         qimg = QtGui.QImage(frame.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
         pixmap = QtGui.QPixmap.fromImage(qimg)
@@ -156,12 +157,14 @@ class GoruntuLabel(QtWidgets.QLabel):
     def mousePressEvent(self, event):
         x = event.x()
         y = event.y()
-        print(f"Tıklama konumu: x={x}, y={y}")
-
+        gui_w = self.width()
+        gui_h = self.height()
+        frame_w, frame_h = self.main_window.current_frame_shape
+        gercekx = int(x * frame_w / gui_w)
+        gerceky = int(y * frame_h / gui_h)
         self.main_window.yol_secici.mouse_callback(
-            cv2.EVENT_LBUTTONDOWN, x, y, True, False
+            cv2.EVENT_LBUTTONDOWN, gercekx, gerceky, True, False
         )
-
 
 
 class FullscreenWindow(QtWidgets.QMainWindow):

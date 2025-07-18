@@ -107,6 +107,7 @@ class Pipeline:
         #           f'Corridor {corridor.id} Entered: {len(corridor.entered_ids)} Exited: {len(corridor.exited_ids)}',
         #           (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         #y_offset += 30
+
         return frame
 
     def release(self):
