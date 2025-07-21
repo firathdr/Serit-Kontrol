@@ -4,9 +4,10 @@ from PyQt5 import QtWidgets, uic, QtGui, QtCore
 import os
 
 from PyQt5.QtGui import QOpenGLWindow
+from PyQt5.QtWidgets import QLabel
 from filterpy.kalman import update
+from torch import parse_ir
 
-from core import pipeline
 from core.pipeline import Pipeline
 from core.detector import ObjectDetector
 from deep_sort_realtime.deepsort_tracker import DeepSort
@@ -16,8 +17,13 @@ from core.arac_yol import Yol_Secici
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-
         uic.loadUi("untitled.ui", self)
+        self.text_Area = self.findChild(QLabel, 'textlabel')
+        if self.text_Area:
+            self.text_Area.setText("İhlal Durumu: Bekleniyor...")
+            self.text_Area.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+            self.text_Area.setWordWrap(True)
+            self.text_Area.setStyleSheet("color: red; font-weight: bold; font-size: 14px;")
         self.comboBox = self.findChild(QtWidgets.QComboBox, "comboBox")
         path_model = "../models"
         if os.path.exists(path_model):
@@ -70,10 +76,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_3.clicked.connect(self.cizim_sil_button)
 
         self.pushButton_5.clicked.connect(self.load_corridors_button)
+        label=QLabel("textlabel")
+        label.show()
 
-        #bu kısımda hata var koridor yükleme kısmı
-
-        #self.label = QtWidgets.QLabel(self.goruntu)
         self.label.setGeometry(0, 0, self.goruntu.width(), self.goruntu.height())
         self.label.setScaledContents(True)
 
@@ -97,6 +102,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pipeline = Pipeline(model_path, mask_path, video_path, detector, tracker, self.yol_secici,ciz_status=True)
         self.paused = False
 
+        self.pipeline.ihlal_detected_signal.connect(self.update_ihlal_display)
+
+
     def fullscreen_button(self):
         pixmap=self.label.pixmap()       #henüz çalışmıyor
         if pixmap:
@@ -111,7 +119,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pipeline.release()
                 self.close()
                 return
-            frame = self.pipeline.process_frame(frame)
+            frame= self.pipeline.process_frame(frame)
             self.show_frame(frame)
     global frame
 
@@ -136,11 +144,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer.stop()
         else:
             self.timer.start()
+    def ihlal_yaz(self,text):
+        self.text_Area.setText(text)
 
     def exit_button(self):
-        self.pipeline.save_ihlaller()
-        self.pipeline.release()
+        if self.pipeline.track_memory is not None:
+            self.pipeline.save_ihlaller()
+            self.pipeline.release()
         self.close()
+
+    def gecici_buton(self):
+        for i in enumerate(self.pipeline.basarili_gecisler):
+            print(i)
+        for i in enumerate(self.pipeline.ihlaller):
+            print(i)
+
 
     def load_corridors_button(self):
         corridor_file = self.comboBox4.currentText()
@@ -148,6 +166,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pipeline.yol_secim.load_corridors(corridor_path)
     def cizim_sil_button(self):
         self.pipeline.cizim_sil()
+    def update_ihlal_display(self, ihlal_messages):
+        current_text = self.text_Area.text()
+        if current_text == "İhlal Durumu: Bekleniyor..." or current_text == "Pipeline başlatıldı. İzleniyor...":
+            current_text = ""
+        for msg in ihlal_messages:
+            current_text += f"\n{msg}"
+        self.text_Area.setText(current_text.strip())
 
 class GoruntuLabel(QtWidgets.QLabel):
     def __init__(self,  main_window,parent):
@@ -167,6 +192,8 @@ class GoruntuLabel(QtWidgets.QLabel):
         )
 
 
+
+
 class FullscreenWindow(QtWidgets.QMainWindow):
     def __init__(self, pixmap):
         super().__init__()
@@ -184,4 +211,5 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
 

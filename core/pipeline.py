@@ -1,22 +1,31 @@
-import cv2
 import json
+import cv2
+from PyQt5.QtCore import QObject, pyqtSignal  # QObject ve pyqtSignal import edin
 
-class Pipeline:
-    def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici,ciz_status):
+
+class Pipeline(QObject):
+    ihlal_detected_signal = pyqtSignal(list)
+
+    def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici, ciz_status):
+        super().__init__()
         self.detector = detector
         self.tracker = tracker
         self.yol_secim = yol_secici
-        self.cap = cv2.VideoCapture(video_path)                  #olarak burda yapılması lazım
-        self.track_memory = {}                                   #bu kısmı gui_pyqt den al
+        self.cap = cv2.VideoCapture(video_path)
+        self.alive_cars = []
+        self.track_memory = {}
         self.ihlaller = []
         self.basarili_gecisler = []
         self.ciz_status = ciz_status
         self.roi_mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-        if self.roi_mask.max() > 1:
-            _, self.roi_mask = cv2.threshold(self.roi_mask, 127, 255, cv2.THRESH_BINARY)
+        if self.roi_mask is None:  # Maske dosyasının yüklendiğini kontrol edin
+            pass
+        else:
+            if self.roi_mask.max() > 1:
+                _, self.roi_mask = cv2.threshold(self.roi_mask, 127, 255, cv2.THRESH_BINARY)
 
-    def pipeline_load(self,yol_secici):
-        yol_secici.load_corridors("../corridors/corridors.json") #koridor yükleme işlemi ayrı
+    def pipeline_load(self, yol_secici):
+        yol_secici.load_corridors("../corridors/corridors.json")
 
     def cizim_sil(self):
         self.ciz_status = False
@@ -26,6 +35,9 @@ class Pipeline:
         return self.cap.read()
 
     def process_frame(self, frame):
+        if self.roi_mask is None:
+            return frame
+
         if (self.roi_mask.shape[0] != frame.shape[0]) or (self.roi_mask.shape[1] != frame.shape[1]):
             self.roi_mask = cv2.resize(self.roi_mask, (frame.shape[1], frame.shape[0]), interpolation=cv2.INTER_NEAREST)
         masked_frame = cv2.bitwise_and(frame, frame, mask=self.roi_mask)
@@ -35,27 +47,36 @@ class Pipeline:
         detections = []
         for result in results:
             for box in result.boxes:
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                conf = box.conf[0].cpu().numpy()
-                cls = int(box.cls[0].cpu().numpy())
-                detections.append(([x1, y1, x2 - x1, y2 - y1], conf, cls))
+                if box.xyxy is not None and len(box.xyxy) > 0:
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    conf = box.conf[0].cpu().numpy()
+                    cls = int(box.cls[0].cpu().numpy())
+                    detections.append(([x1, y1, x2 - x1, y2 - y1], conf, cls))
 
-        tracks = self.tracker.update_tracks(detections, frame=frame)
-        alive_cars = []
+        if not detections:
+            tracks = self.tracker.update_tracks([], frame=frame)
+        else:
+            tracks = self.tracker.update_tracks(detections, frame=frame)
 
+        ihlal_text = []
+        self.alive_cars = []
+        for track in tracks:
+            if not track.is_confirmed():
+                continue
+            self.alive_cars.append(track.track_id)
         for track in tracks:
             if not track.is_confirmed():
                 continue
 
             track_id = track.track_id
-            alive_cars.append(track_id)
             ltrb = track.to_ltrb()
             x1, y1, x2, y2 = map(int, ltrb)
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
             for idx, corridor in enumerate(self.yol_secim.corridors):
                 if not hasattr(corridor, "id"):
-                    corridor.id = idx + 1
+                    corridor.id = idx + 1  # Eğer corridor objesi id'ye sahip değilse atarız
+
             if len(self.yol_secim.corridors) > 0:
                 if track_id in self.track_memory:
                     prev_cx, prev_cy = self.track_memory[track_id]
@@ -64,12 +85,12 @@ class Pipeline:
                         if self.yol_secim.is_crossing_line((cx, cy), (prev_cx, prev_cy), corridor.entry_line):
                             if track_id not in corridor.entered_ids:
                                 corridor.entered_ids.add(track_id)
-                                print(f"{track_id} girişini {corridor.id} yoluna yaptı")
+                                # print(f"{track_id} girişini {corridor.id} yoluna yaptı")
 
                         if track_id in corridor.entered_ids and track_id not in corridor.exited_ids:
                             if self.yol_secim.is_crossing_line((cx, cy), (prev_cx, prev_cy), corridor.exit_line):
                                 corridor.exited_ids.add(track_id)
-                                print(f"{track_id} çıkışını {corridor.id} yoluna yaptı")
+                                # print(f"{track_id} çıkışını {corridor.id} yoluna yaptı")
                                 gecis_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
                                 self.basarili_gecisler.append({
                                     "track_id": track_id,
@@ -85,28 +106,30 @@ class Pipeline:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
 
             for corridor in self.yol_secim.corridors:
+                current_alive_track_ids = set(self.alive_cars)
+
                 for entered_id in list(corridor.entered_ids):
-                    if entered_id not in alive_cars and entered_id not in corridor.exited_ids and not any(
-                            g['track_id'] == entered_id for g in self.basarili_gecisler):
+                    if entered_id not in current_alive_track_ids and \
+                            entered_id not in corridor.exited_ids and \
+                            not any(g['track_id'] == entered_id for g in self.basarili_gecisler):
+
                         if not any(i['track_id'] == entered_id for i in self.ihlaller):
                             ihlal_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                            self.ihlaller.append({
+                            ihlal_data = {
                                 "track_id": entered_id,
                                 "time_seconds": round(ihlal_zamani, 2),
                                 "corridor_id": corridor.id,
                                 "ihlal_durum": True
-                            })
-                            print(f"Ihlal: {entered_id} @ {ihlal_zamani:.2f} s (Corridor ID: {corridor.id})")
+                            }
+                            self.ihlaller.append(ihlal_data)
+                            ihlal_text.append(f"İhlal: ID {entered_id} @ {ihlal_zamani:.2f}s (Koridor: {corridor.id})")
+                            # print(f"İhlal: {entered_id} @ {ihlal_zamani:.2f}s (Corridor ID: {corridor.id})")
 
+        if ihlal_text:
+            self.ihlal_detected_signal.emit(ihlal_text)
 
         if self.ciz_status:
             self.yol_secim.draw_corridors(frame)
-        #y_offset = 10
-
-        #cv2.putText(frame,
-        #           f'Corridor {corridor.id} Entered: {len(corridor.entered_ids)} Exited: {len(corridor.exited_ids)}',
-        #           (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        #y_offset += 30
 
         return frame
 
