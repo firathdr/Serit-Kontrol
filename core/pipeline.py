@@ -131,6 +131,7 @@ class Pipeline(QObject):
         if self.ciz_status:
             self.yol_secim.draw_corridors(frame)
 
+
         return frame
 
     def release(self):
@@ -142,6 +143,7 @@ class Pipeline(QObject):
             if not any(g['track_id'] == ihlal["track_id"] for g in self.basarili_gecisler):
                 temiz_ihlaller.append(ihlal)
         self.ihlaller = temiz_ihlaller
+        return temiz_ihlaller
+        #with open("ihlaller.json", "w") as f:
+            #json.dump(self.ihlaller, f, indent=4)
 
-        with open("ihlaller.json", "w") as f:
-            json.dump(self.ihlaller, f, indent=4)

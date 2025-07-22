@@ -12,7 +12,7 @@ from core.pipeline import Pipeline
 from core.detector import ObjectDetector
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from core.arac_yol import Yol_Secici
-
+from db_gui import DBPage
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -64,8 +64,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_4.clicked.connect(self.exit_button)
         self.pushButton.clicked.connect(self.paused_button)
         self.pushButton_7.clicked.connect(self.fullscreen_button)  #ŞİMDİLİK ÇALIŞMIYOR
+        self.pushButton_8.clicked.connect(self.database_page)  # ŞİMDİLİK ÇALIŞMIYOR
 
 
+
+        self.second_page = DBPage()
         self.label = GoruntuLabel(main_window=self, parent=self.goruntu)
         self.yol_secici = Yol_Secici()
         corridor_file= self.comboBox4.currentText()
@@ -115,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.paused:
             ret, frame = self.pipeline.read_frame()
             if not ret:
-                self.pipeline.save_ihlaller()
+                #self.pipeline.save_ihlaller()
                 self.pipeline.release()
                 self.close()
                 return
@@ -149,7 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def exit_button(self):
         if self.pipeline.track_memory is not None:
-            self.pipeline.save_ihlaller()
+            #self.pipeline.save_ihlaller()
             self.pipeline.release()
         self.close()
 
@@ -173,6 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for msg in ihlal_messages:
             current_text += f"\n{msg}"
         self.text_Area.setText(current_text.strip())
+    def database_page(self):
+        self.second_page.show()
 
 class GoruntuLabel(QtWidgets.QLabel):
     def __init__(self,  main_window,parent):
