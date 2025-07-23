@@ -18,6 +18,42 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         uic.loadUi("untitled.ui", self)
+        self.setStyleSheet("""
+    QMainWindow {
+        background-color: #384042;
+    }
+    QFrame#goruntu {
+        background-color: #ffffff;
+        border: 2px solid #021F59;
+    }
+    QPushButton {
+        background-color: #049DD9;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+    }
+    QPushButton:hover {
+        background-color: #243E73;
+        
+
+    }
+    QLabel {
+        color: #021F59;
+    }
+    QComboBox {
+        background-color: #F2F2F2;
+        color: #243E73;
+        border: 1px solid #243E73;
+        padding: 2px 5px;
+    }
+    QMenuBar {
+        background-color: #021F59;
+    }
+    QMenuBar::item {
+        color: white;
+    }
+""")
         self.text_Area = self.findChild(QLabel, 'textlabel')
         if self.text_Area:
             self.text_Area.setText("İhlal Durumu: Bekleniyor...")
@@ -64,7 +100,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_4.clicked.connect(self.exit_button)
         self.pushButton.clicked.connect(self.paused_button)
         self.pushButton_7.clicked.connect(self.fullscreen_button)  #ŞİMDİLİK ÇALIŞMIYOR
-        self.pushButton_8.clicked.connect(self.database_page)  # ŞİMDİLİK ÇALIŞMIYOR
+        self.pushButton_8.clicked.connect(self.database_page)
+
 
 
 
@@ -151,9 +188,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.text_Area.setText(text)
 
     def exit_button(self):
-        if self.pipeline.track_memory is not None:
-            #self.pipeline.save_ihlaller()
-            self.pipeline.release()
+        try:
+            if self.pipeline.track_memory is not None:
+                self.pipeline.release()
+        except Exception as e:
+            pass
         self.close()
 
     def gecici_buton(self):

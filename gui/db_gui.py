@@ -1,15 +1,61 @@
 from PyQt5.QtWidgets import QWidget, QTableWidgetItem,QLineEdit
 from PyQt5 import uic
 from database.db_config import get_connection
-
+from gelimis_gui import DBPG
 class DBPage(QWidget):
     def __init__(self):
         super().__init__()
         uic.loadUi("secondpage.ui", self)
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #384042;
+;
+            }
 
+            QPushButton {
+                background-color: #049DD9;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 8px 15px;
+                font-weight: bold;
+            }
+
+            QPushButton:hover {
+                background-color: #243E73;
+            }
+
+            QLineEdit {
+                background-color: white;
+                color: #021F59;
+                border: 2px solid #8BBBD9;
+                border-radius: 5px;
+                padding: 5px;
+            }
+
+            QTableWidget {
+                background-color: #F2F2F2;
+                gridline-color: #8BBBD9;
+                color: #021F59;
+                border: 1px solid #021F59;
+                selection-background-color: #8BBBD9;
+                selection-color: #021F59;
+            }
+
+            QHeaderView::section {
+                background-color: #021F59;
+                color: white;
+                padding: 4px;
+                border: none;
+            }
+        """)
+        self.gelismis_page=DBPG()
         self.pushButton_2.clicked.connect(self.tum_gecisler)#tüm durumlar
         self.pushButton_3.clicked.connect(self.ihlal_gecisler)#ihlal
         self.pushButton_4.clicked.connect(self.basarili_gecisler)#basariligecis
+        self.pushButton_7.clicked.connect(self.gelismis)
+        self.pushButton_5.clicked.connect(self.exit_button)
+
         self.lineEdit.returnPressed.connect(self.where_sorgu)
 
 
@@ -81,3 +127,10 @@ class DBPage(QWidget):
             cursor.close()
         except Exception as e:
             print(f"Bağlantı hatası: {e}")
+    def gelismis(self):
+        self.gelismis_page.show()
+
+
+
+    def exit_button(self):
+        self.close()

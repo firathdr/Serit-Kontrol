@@ -1,7 +1,7 @@
 import json
 import cv2
 from PyQt5.QtCore import QObject, pyqtSignal  # QObject ve pyqtSignal import edin
-
+from database.ihlal_ekle import ihlal_ekle_db
 
 class Pipeline(QObject):
     ihlal_detected_signal = pyqtSignal(list)
@@ -92,12 +92,18 @@ class Pipeline(QObject):
                                 corridor.exited_ids.add(track_id)
                                 # print(f"{track_id} çıkışını {corridor.id} yoluna yaptı")
                                 gecis_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                                self.basarili_gecisler.append({
+                                basarili_gecis = {
                                     "track_id": track_id,
                                     "time_seconds": round(gecis_zamani, 2),
                                     "corridor_id": corridor.id,
                                     "ihlal_durum": False
-                                })
+                                }
+                                self.basarili_gecisler.append(basarili_gecis)
+                                try:
+                                    ihlal_ekle_db(basarili_gecis['track_id'], basarili_gecis['time_seconds'],
+                                                  basarili_gecis['corridor_id'], basarili_gecis['ihlal_durum'])
+                                except Exception as e:
+                                    print(f"Bağlantı hatası: {e}")
 
                 self.track_memory[track_id] = (cx, cy)
 
@@ -123,6 +129,7 @@ class Pipeline(QObject):
                             }
                             self.ihlaller.append(ihlal_data)
                             ihlal_text.append(f"İhlal: ID {entered_id} @ {ihlal_zamani:.2f}s (Koridor: {corridor.id})")
+                            ihlal_ekle_db(ihlal_data['track_id'], ihlal_data['time_seconds'], ihlal_data['corridor_id'], ihlal_data['ihlal_durum'])
                             # print(f"İhlal: {entered_id} @ {ihlal_zamani:.2f}s (Corridor ID: {corridor.id})")
 
         if ihlal_text:
@@ -143,7 +150,10 @@ class Pipeline(QObject):
             if not any(g['track_id'] == ihlal["track_id"] for g in self.basarili_gecisler):
                 temiz_ihlaller.append(ihlal)
         self.ihlaller = temiz_ihlaller
-        return temiz_ihlaller
+
+
+
+        #return temiz_ihlaller
         #with open("ihlaller.json", "w") as f:
             #json.dump(self.ihlaller, f, indent=4)
 
