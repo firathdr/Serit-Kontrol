@@ -2,7 +2,7 @@ import json
 import cv2
 from PyQt5.QtCore import QObject, pyqtSignal  # QObject ve pyqtSignal import edin
 from database.ihlal_ekle import ihlal_ekle_db
-
+from database.db_config import get_connection
 class Pipeline(QObject):
     ihlal_detected_signal = pyqtSignal(list)
 
@@ -33,6 +33,8 @@ class Pipeline(QObject):
 
     def read_frame(self):
         return self.cap.read()
+
+
 
     def process_frame(self, frame):
         if self.roi_mask is None:
@@ -86,6 +88,23 @@ class Pipeline(QObject):
                             if track_id not in corridor.entered_ids:
                                 corridor.entered_ids.add(track_id)
                                 # print(f"{track_id} girişini {corridor.id} yoluna yaptı")
+                                #BU KISIMA ARAC GORUNTU ALMAYI ENTEGRE EDİCEZ
+
+                                roi = frame[y1:y2, x1:x2]
+                                retval, buffer = cv2.imencode('.jpg', roi)
+                                image_bytes = buffer.tobytes()
+                                try:
+                                    conn = get_connection()
+                                    cursor = conn.cursor()
+                                    sql = "INSERT INTO arac_goruntu (arac_id, goruntu) VALUES (%s, %s)"
+                                    cursor.execute(sql, (track_id, image_bytes))
+                                    conn.commit()
+                                    cursor.close()
+                                    conn.close()
+                                    #print(f"TrackID {track_id} için görüntü veritabanına kaydedildi.")
+                                except Exception as e:
+                                    print(f"Görüntü DB kaydetme hatası: {e}")
+
 
                         if track_id in corridor.entered_ids and track_id not in corridor.exited_ids:
                             if self.yol_secim.is_crossing_line((cx, cy), (prev_cx, prev_cy), corridor.exit_line):
@@ -98,6 +117,7 @@ class Pipeline(QObject):
                                     "corridor_id": corridor.id,
                                     "ihlal_durum": False
                                 }
+
                                 self.basarili_gecisler.append(basarili_gecis)
                                 try:
                                     ihlal_ekle_db(basarili_gecis['track_id'], basarili_gecis['time_seconds'],
@@ -118,7 +138,6 @@ class Pipeline(QObject):
                     if entered_id not in current_alive_track_ids and \
                             entered_id not in corridor.exited_ids and \
                             not any(g['track_id'] == entered_id for g in self.basarili_gecisler):
-
                         if not any(i['track_id'] == entered_id for i in self.ihlaller):
                             ihlal_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
                             ihlal_data = {
@@ -150,7 +169,6 @@ class Pipeline(QObject):
             if not any(g['track_id'] == ihlal["track_id"] for g in self.basarili_gecisler):
                 temiz_ihlaller.append(ihlal)
         self.ihlaller = temiz_ihlaller
-
 
 
         #return temiz_ihlaller

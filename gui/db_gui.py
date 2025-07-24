@@ -55,11 +55,9 @@ class DBPage(QWidget):
         self.pushButton_4.clicked.connect(self.basarili_gecisler)#basariligecis
         self.pushButton_7.clicked.connect(self.gelismis)
         self.pushButton_5.clicked.connect(self.exit_button)
+        self.pushButton.clicked.connect(self.where_sorgu)
 
         self.lineEdit.returnPressed.connect(self.where_sorgu)
-
-
-
 
     def tum_gecisler(self):
         try:
