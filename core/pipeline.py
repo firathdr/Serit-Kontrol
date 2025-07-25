@@ -87,17 +87,17 @@ class Pipeline(QObject):
                         if self.yol_secim.is_crossing_line((cx, cy), (prev_cx, prev_cy), corridor.entry_line):
                             if track_id not in corridor.entered_ids:
                                 corridor.entered_ids.add(track_id)
+                                giris_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
                                 # print(f"{track_id} girişini {corridor.id} yoluna yaptı")
-                                #BU KISIMA ARAC GORUNTU ALMAYI ENTEGRE EDİCEZ
-
+                                #roi = frame[round(y1/2):round(y2*2), round(x1/2):round(x2*2)]
                                 roi = frame[y1:y2, x1:x2]
                                 retval, buffer = cv2.imencode('.jpg', roi)
                                 image_bytes = buffer.tobytes()
                                 try:
                                     conn = get_connection()
                                     cursor = conn.cursor()
-                                    sql = "INSERT INTO arac_goruntu (arac_id, goruntu) VALUES (%s, %s)"
-                                    cursor.execute(sql, (track_id, image_bytes))
+                                    sql = "INSERT INTO arac_goruntu (arac_id, goruntu,giris_zamani) VALUES (%s, %s,%s)"
+                                    cursor.execute(sql, (track_id, image_bytes,giris_zamani))
                                     conn.commit()
                                     cursor.close()
                                     conn.close()
@@ -170,8 +170,4 @@ class Pipeline(QObject):
                 temiz_ihlaller.append(ihlal)
         self.ihlaller = temiz_ihlaller
 
-
-        #return temiz_ihlaller
-        #with open("ihlaller.json", "w") as f:
-            #json.dump(self.ihlaller, f, indent=4)
 

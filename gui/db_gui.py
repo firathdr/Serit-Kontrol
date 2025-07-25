@@ -1,7 +1,12 @@
-from PyQt5.QtWidgets import QWidget, QTableWidgetItem,QLineEdit
-from PyQt5 import uic
+from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QLabel
+from PyQt5 import uic, QtCore
 from database.db_config import get_connection
 from gelimis_gui import DBPG
+from gui.video_player import DBVideo
+from PyQt5.QtGui import QPixmap
+from PIL import Image
+import io
+
 class DBPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -56,6 +61,7 @@ class DBPage(QWidget):
         self.pushButton_7.clicked.connect(self.gelismis)
         self.pushButton_5.clicked.connect(self.exit_button)
         self.pushButton.clicked.connect(self.where_sorgu)
+        self.pushButton_6.clicked.connect(self.izlet)
 
         self.lineEdit.returnPressed.connect(self.where_sorgu)
 
@@ -122,13 +128,38 @@ class DBPage(QWidget):
                 for col_idx, col_data in enumerate(row_data):
                     item = QTableWidgetItem(str(col_data))
                     self.tableWidget.setItem(row_idx, col_idx, item)
+            cursor.execute(f"SELECT goruntu FROM arac_goruntu WHERE arac_id = %s", (aracid))
+            row = cursor.fetchone()
+            label = self.findChild(QLabel, "arac_resim")
+            label_width = label.width()
+            label_height = label.height()
+            if row and row[0]:
+                image_data = row[0]
+                image = Image.open(io.BytesIO(image_data))
+                image = image.convert("RGB")
+                data = io.BytesIO()
+                image.save(data, format="PNG")
+                pixmap = QPixmap()
+                pixmap.loadFromData(data.getvalue())
+                label.setScaledContents(True)
+                scaled_pixmap = pixmap.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio,QtCore.Qt.SmoothTransformation)
+                #self.findChild(QLabel, "arac_resim").setPixmap(pixmap)
+                label.setPixmap(scaled_pixmap)
+
+            else:
+                print("Görüntü bulunamadı.")
             cursor.close()
         except Exception as e:
             print(f"Bağlantı hatası: {e}")
+
     def gelismis(self):
         self.gelismis_page.show()
 
 
+    def izlet(self):
+        aracid = self.lineEdit.text()
+        self.video_oynatici=DBVideo(aracid)
+        self.video_oynatici.show()
 
     def exit_button(self):
         self.close()

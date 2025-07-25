@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1101</width>
-    <height>749</height>
+    <width>1085</width>
+    <height>786</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>230</x>
-     <y>630</y>
+     <x>860</x>
+     <y>300</y>
      <width>171</width>
      <height>41</height>
     </rect>
@@ -29,21 +29,21 @@
   <widget class="QLineEdit" name="lineEdit">
    <property name="geometry">
     <rect>
-     <x>230</x>
-     <y>570</y>
+     <x>860</x>
+     <y>240</y>
      <width>171</width>
      <height>41</height>
     </rect>
    </property>
    <property name="text">
-    <string>Enter a Tıklayınız</string>
+    <string/>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_2">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>570</y>
+     <x>860</x>
+     <y>60</y>
      <width>171</width>
      <height>41</height>
     </rect>
@@ -55,8 +55,8 @@
   <widget class="QPushButton" name="pushButton_3">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>630</y>
+     <x>860</x>
+     <y>120</y>
      <width>171</width>
      <height>41</height>
     </rect>
@@ -68,8 +68,8 @@
   <widget class="QPushButton" name="pushButton_4">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>690</y>
+     <x>860</x>
+     <y>180</y>
      <width>171</width>
      <height>41</height>
     </rect>
@@ -83,8 +83,8 @@
     <rect>
      <x>80</x>
      <y>60</y>
-     <width>941</width>
-     <height>451</height>
+     <width>741</width>
+     <height>461</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -104,9 +104,9 @@
   <widget class="QPushButton" name="pushButton_5">
    <property name="geometry">
     <rect>
-     <x>880</x>
-     <y>670</y>
-     <width>141</width>
+     <x>860</x>
+     <y>480</y>
+     <width>171</width>
      <height>41</height>
     </rect>
    </property>
@@ -117,14 +117,40 @@
   <widget class="QPushButton" name="pushButton_7">
    <property name="geometry">
     <rect>
-     <x>230</x>
-     <y>690</y>
+     <x>860</x>
+     <y>420</y>
      <width>171</width>
      <height>41</height>
     </rect>
    </property>
    <property name="text">
     <string>Gelişmiş Düzenleme</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="arac_resim">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>540</y>
+     <width>561</width>
+     <height>201</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_6">
+   <property name="geometry">
+    <rect>
+     <x>860</x>
+     <y>360</y>
+     <width>171</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>İzle</string>
    </property>
   </widget>
  </widget>

@@ -13,6 +13,7 @@ class DBPG(QWidget):
         self.pushButton_3.clicked.connect(self.kayit_degisiklik)
         self.pushButton_4.clicked.connect(self.veritabani_sil)
         self.lineEdit.returnPressed.connect(self.where_sorgu)
+
         self.text_Area = self.findChild(QLabel, 'label')
 
         self.tableWidget.itemChanged.connect(self.item_changed)
@@ -83,9 +84,10 @@ class DBPG(QWidget):
 
             query = f"UPDATE araclar SET {column_name} = %s WHERE arac_id = %s"
             cursor.execute(query, (new_value, arac_id))
-
             self.connection.commit()
             cursor.close()
+            self.text_Area.setText(f"{arac_id} kodlu araç kaydı başarıyla güncellendi.")
+
             print(f"{column_name} güncellendi: {new_value}")
 
         except Exception as e:
