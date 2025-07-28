@@ -1,16 +1,15 @@
-import json
 import cv2
 from PyQt5.QtCore import QObject, pyqtSignal  # QObject ve pyqtSignal import edin
 from database.ihlal_ekle import ihlal_ekle_db
 from database.db_config import get_connection
 class Pipeline(QObject):
     ihlal_detected_signal = pyqtSignal(list)
-
     def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici, ciz_status):
         super().__init__()
         self.detector = detector
         self.tracker = tracker
         self.yol_secim = yol_secici
+        self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.alive_cars = []
         self.track_memory = {}
@@ -25,7 +24,7 @@ class Pipeline(QObject):
                 _, self.roi_mask = cv2.threshold(self.roi_mask, 127, 255, cv2.THRESH_BINARY)
 
     def pipeline_load(self, yol_secici):
-        yol_secici.load_corridors("../corridors/corridors.json")
+        yol_secici.load_corridors("../corridors/corridors.json") #kullanılmıyor artık sil bu satırı
 
     def cizim_sil(self):
         self.ciz_status = False
@@ -33,8 +32,6 @@ class Pipeline(QObject):
 
     def read_frame(self):
         return self.cap.read()
-
-
 
     def process_frame(self, frame):
         if self.roi_mask is None:
@@ -96,8 +93,8 @@ class Pipeline(QObject):
                                 try:
                                     conn = get_connection()
                                     cursor = conn.cursor()
-                                    sql = "INSERT INTO arac_goruntu (arac_id, goruntu,giris_zamani) VALUES (%s, %s,%s)"
-                                    cursor.execute(sql, (track_id, image_bytes,giris_zamani))
+                                    sql = "INSERT INTO arac_goruntu (arac_id, goruntu,giris_zamani,video_name) VALUES (%s, %s,%s,%s)"
+                                    cursor.execute(sql, (track_id, image_bytes,giris_zamani,self.video_path.replace("\\", "/").split("/")[-1].split(".")[0]))
                                     conn.commit()
                                     cursor.close()
                                     conn.close()
@@ -115,13 +112,13 @@ class Pipeline(QObject):
                                     "track_id": track_id,
                                     "time_seconds": round(gecis_zamani, 2),
                                     "corridor_id": corridor.id,
-                                    "ihlal_durum": False
+                                    "ihlal_durum": False,
+                                    "video_name":self.video_path.replace("\\", "/").split("/")[-1].split(".")[0]
                                 }
-
                                 self.basarili_gecisler.append(basarili_gecis)
                                 try:
                                     ihlal_ekle_db(basarili_gecis['track_id'], basarili_gecis['time_seconds'],
-                                                  basarili_gecis['corridor_id'], basarili_gecis['ihlal_durum'])
+                                                  basarili_gecis['corridor_id'], basarili_gecis['ihlal_durum'],basarili_gecis['video_name'])
                                 except Exception as e:
                                     print(f"Bağlantı hatası: {e}")
 
@@ -144,11 +141,14 @@ class Pipeline(QObject):
                                 "track_id": entered_id,
                                 "time_seconds": round(ihlal_zamani, 2),
                                 "corridor_id": corridor.id,
-                                "ihlal_durum": True
+                                "ihlal_durum": True,
+                                "video_name": self.video_path.replace("\\", "/").split("/")[-1].split(".")[0]
+
                             }
                             self.ihlaller.append(ihlal_data)
+
                             ihlal_text.append(f"İhlal: ID {entered_id} @ {ihlal_zamani:.2f}s (Koridor: {corridor.id})")
-                            ihlal_ekle_db(ihlal_data['track_id'], ihlal_data['time_seconds'], ihlal_data['corridor_id'], ihlal_data['ihlal_durum'])
+                            ihlal_ekle_db(ihlal_data['track_id'], ihlal_data['time_seconds'], ihlal_data['corridor_id'], ihlal_data['ihlal_durum'],ihlal_data['video_name'])
                             # print(f"İhlal: {entered_id} @ {ihlal_zamani:.2f}s (Corridor ID: {corridor.id})")
 
         if ihlal_text:
@@ -156,8 +156,6 @@ class Pipeline(QObject):
 
         if self.ciz_status:
             self.yol_secim.draw_corridors(frame)
-
-
         return frame
 
     def release(self):

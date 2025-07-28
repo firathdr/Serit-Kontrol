@@ -103,9 +103,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_8.clicked.connect(self.database_page)
 
 
-
-
-        self.second_page = DBPage()
         self.label = GoruntuLabel(main_window=self, parent=self.goruntu)
         self.yol_secici = Yol_Secici()
         corridor_file= self.comboBox4.currentText()
@@ -216,6 +213,7 @@ class MainWindow(QtWidgets.QMainWindow):
             current_text += f"\n{msg}"
         self.text_Area.setText(current_text.strip())
     def database_page(self):
+        self.second_page = DBPage(self.comboBox3.currentText())
         self.second_page.show()
 
 class GoruntuLabel(QtWidgets.QLabel):

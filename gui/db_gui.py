@@ -8,7 +8,7 @@ from PIL import Image
 import io
 
 class DBPage(QWidget):
-    def __init__(self):
+    def __init__(self,video_name):
         super().__init__()
         uic.loadUi("secondpage.ui", self)
         self.setStyleSheet("""
@@ -55,6 +55,7 @@ class DBPage(QWidget):
             }
         """)
         self.gelismis_page=DBPG()
+        self.video_name = video_name.split(".")[0]
         self.pushButton_2.clicked.connect(self.tum_gecisler)#tüm durumlar
         self.pushButton_3.clicked.connect(self.ihlal_gecisler)#ihlal
         self.pushButton_4.clicked.connect(self.basarili_gecisler)#basariligecis
@@ -69,7 +70,7 @@ class DBPage(QWidget):
         try:
             self.connection = get_connection()
             cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM araclar")
+            cursor.execute("SELECT * FROM araclar where video_name = '{}'".format(self.video_name))
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             self.tableWidget.setRowCount(len(rows))
@@ -86,7 +87,7 @@ class DBPage(QWidget):
     def ihlal_gecisler(self):
         self.connection = get_connection()
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM araclar where ihlal_durumu = 1")
+        cursor.execute("SELECT * FROM araclar WHERE ihlal_durumu = 1 AND video_name = %s", (self.video_name,))
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
         self.tableWidget.setRowCount(len(rows))
@@ -101,7 +102,7 @@ class DBPage(QWidget):
     def basarili_gecisler(self):
         self.connection = get_connection()
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM araclar where ihlal_durumu = 0")
+        cursor.execute("SELECT * FROM araclar WHERE ihlal_durumu = 0 AND video_name = %s", (self.video_name,))
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
         self.tableWidget.setRowCount(len(rows))
@@ -118,7 +119,7 @@ class DBPage(QWidget):
         try:
             self.connection = get_connection()
             cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM araclar WHERE arac_id = %s", (aracid))
+            cursor.execute("SELECT * FROM araclar WHERE arac_id = %s and video_name=%s", (aracid,self.video_name))
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             self.tableWidget.setRowCount(len(rows))
@@ -128,7 +129,7 @@ class DBPage(QWidget):
                 for col_idx, col_data in enumerate(row_data):
                     item = QTableWidgetItem(str(col_data))
                     self.tableWidget.setItem(row_idx, col_idx, item)
-            cursor.execute(f"SELECT goruntu FROM arac_goruntu WHERE arac_id = %s", (aracid))
+            cursor.execute(f"SELECT goruntu FROM arac_goruntu WHERE arac_id = %s and video_name=%s", (aracid,self.video_name))
             row = cursor.fetchone()
             label = self.findChild(QLabel, "arac_resim")
             label_width = label.width()
@@ -158,7 +159,7 @@ class DBPage(QWidget):
 
     def izlet(self):
         aracid = self.lineEdit.text()
-        self.video_oynatici=DBVideo(aracid)
+        self.video_oynatici=DBVideo(aracid,self.video_name)
         self.video_oynatici.show()
 
     def exit_button(self):
