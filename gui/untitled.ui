@@ -260,19 +260,6 @@
      <string>Veritabanı</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_9">
-    <property name="geometry">
-     <rect>
-      <x>580</x>
-      <y>650</y>
-      <width>161</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Kaydet</string>
-    </property>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -289,18 +276,12 @@
     </property>
     <addaction name="actionAyarlar"/>
    </widget>
-   <widget class="QMenu" name="menu_hlaller">
-    <property name="title">
-     <string>İhlaller</string>
-    </property>
-   </widget>
    <addaction name="menuAnasayfa"/>
-   <addaction name="menu_hlaller"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAyarlar">
    <property name="text">
-    <string>Ayarlar</string>
+    <string>Loglar</string>
    </property>
   </action>
  </widget>

@@ -2,6 +2,8 @@ import cv2
 from PyQt5.QtCore import QObject, pyqtSignal  # QObject ve pyqtSignal import edin
 from database.ihlal_ekle import ihlal_ekle_db
 from database.db_config import get_connection
+
+
 class Pipeline(QObject):
     ihlal_detected_signal = pyqtSignal(list)
     def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici, ciz_status):
@@ -22,9 +24,6 @@ class Pipeline(QObject):
         else:
             if self.roi_mask.max() > 1:
                 _, self.roi_mask = cv2.threshold(self.roi_mask, 127, 255, cv2.THRESH_BINARY)
-
-    def pipeline_load(self, yol_secici):
-        yol_secici.load_corridors("../corridors/corridors.json") #kullanılmıyor artık sil bu satırı
 
     def cizim_sil(self):
         self.ciz_status = False
@@ -161,11 +160,5 @@ class Pipeline(QObject):
     def release(self):
         self.cap.release()
 
-    def save_ihlaller(self):
-        temiz_ihlaller = []
-        for ihlal in self.ihlaller:
-            if not any(g['track_id'] == ihlal["track_id"] for g in self.basarili_gecisler):
-                temiz_ihlaller.append(ihlal)
-        self.ihlaller = temiz_ihlaller
 
 

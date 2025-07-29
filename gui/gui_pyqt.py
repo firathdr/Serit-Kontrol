@@ -2,11 +2,7 @@ import sys
 import cv2
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 import os
-
-from PyQt5.QtGui import QOpenGLWindow
 from PyQt5.QtWidgets import QLabel
-from filterpy.kalman import update
-from torch import parse_ir
 
 from core.pipeline import Pipeline
 from core.detector import ObjectDetector
@@ -18,6 +14,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         uic.loadUi("untitled.ui", self)
+        self.setWindowTitle("Şerit Kontrol Sistemi")
         self.setStyleSheet("""
     QMainWindow {
         background-color: #384042;
@@ -107,11 +104,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.yol_secici = Yol_Secici()
         corridor_file= self.comboBox4.currentText()
 
-        self.pushButton_2.clicked.connect(
-            lambda: self.yol_secici.save_corridors( os.path.join("../corridors", corridor_file))
-        )
+        self.pushButton_2.clicked.connect(self.save_koridor)
         self.pushButton_3.clicked.connect(self.cizim_sil_button)
-
         self.pushButton_5.clicked.connect(self.load_corridors_button)
         label=QLabel("textlabel")
         label.show()
@@ -141,18 +135,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.pipeline.ihlal_detected_signal.connect(self.update_ihlal_display)
 
-
     def fullscreen_button(self):
-        pixmap=self.label.pixmap()       #henüz çalışmıyor
-        if pixmap:
-            self.fullscreen=FullscreenWindow(pixmap)
-            self.fullscreen.label.setPixmap(pixmap)
+        if not hasattr(self, "Tam ekran") or self.fullscreen is None or self.fullscreen.isHidden():
+            self.fullscreen = FullscreenWindow(self)
+            self.fullscreen.show()
 
     def update_frame(self):
         if not self.paused:
             ret, frame = self.pipeline.read_frame()
             if not ret:
-                #self.pipeline.save_ihlaller()
                 self.pipeline.release()
                 self.close()
                 return
@@ -160,7 +151,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_frame(frame)
     global frame
 
-    def show_frame(self, frame):
+    def save_koridor(self):
+        self.yol_secici.save_corridors(os.path.join(f"../corridors/{self.comboBox4.currentText()}"))
+
+    def show_framee(self, frame):
         self.yol_secici.draw_corridors(frame)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = frame.shape
@@ -169,6 +163,21 @@ class MainWindow(QtWidgets.QMainWindow):
         qimg = QtGui.QImage(frame.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
         pixmap = QtGui.QPixmap.fromImage(qimg)
         self.label.setPixmap(pixmap)
+
+    def show_frame(self, frame):
+        self.yol_secici.draw_corridors(frame)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = frame.shape
+        self.current_frame_shape = (w, h)
+        bytes_per_line = ch * w
+        qimg = QtGui.QImage(frame.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        pixmap = QtGui.QPixmap.fromImage(qimg)
+
+        self.label.setPixmap(pixmap)
+
+        if hasattr(self, "fullscreen") and self.fullscreen is not None:
+            if not self.fullscreen.isHidden():
+                self.fullscreen.label.setPixmap(pixmap)
 
     def gecis_log(self):
         label=QtWidgets.QLabel(self.goruntu)
@@ -181,8 +190,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.timer.stop()
         else:
             self.timer.start()
-    def ihlal_yaz(self,text):
-        self.text_Area.setText(text)
 
     def exit_button(self):
         try:
@@ -203,8 +210,10 @@ class MainWindow(QtWidgets.QMainWindow):
         corridor_file = self.comboBox4.currentText()
         corridor_path = os.path.join("../corridors", corridor_file)
         self.pipeline.yol_secim.load_corridors(corridor_path)
+
     def cizim_sil_button(self):
         self.pipeline.cizim_sil()
+
     def update_ihlal_display(self, ihlal_messages):
         current_text = self.text_Area.text()
         if current_text == "İhlal Durumu: Bekleniyor..." or current_text == "Pipeline başlatıldı. İzleniyor...":
@@ -212,6 +221,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for msg in ihlal_messages:
             current_text += f"\n{msg}"
         self.text_Area.setText(current_text.strip())
+
     def database_page(self):
         self.second_page = DBPage(self.comboBox3.currentText())
         self.second_page.show()
@@ -222,30 +232,34 @@ class GoruntuLabel(QtWidgets.QLabel):
         self.main_window = main_window
 
     def mousePressEvent(self, event):
-        x = event.x()
-        y = event.y()
-        gui_w = self.width()
-        gui_h = self.height()
-        frame_w, frame_h = self.main_window.current_frame_shape
-        gercekx = int(x * frame_w / gui_w)
-        gerceky = int(y * frame_h / gui_h)
-        self.main_window.yol_secici.mouse_callback(
-            cv2.EVENT_LBUTTONDOWN, gercekx, gerceky, True, False
-        )
-
-
-
+        try:
+            x = event.x()
+            y = event.y()
+            gui_w = self.width()
+            gui_h = self.height()
+            frame_w, frame_h = self.main_window.current_frame_shape
+            gercekx = int(x * frame_w / gui_w)
+            gerceky = int(y * frame_h / gui_h)
+            self.main_window.yol_secici.mouse_callback(
+                cv2.EVENT_LBUTTONDOWN, gercekx, gerceky, True, False
+            )
+        except:
+            pass
 
 class FullscreenWindow(QtWidgets.QMainWindow):
-    def __init__(self, pixmap):
+    def __init__(self, main_window):
         super().__init__()
         self.setWindowTitle("Tam Ekran")
-        self.label = GoruntuLabel(main_window=self,parent=self)
+        self.main_window = main_window
+        self.label = GoruntuLabel(main_window=main_window, parent=self)
         self.setCentralWidget(self.label)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setScaledContents(True)
-        self.label.setPixmap(pixmap)
         self.showFullScreen()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.close()
 
 
 if __name__ == "__main__":

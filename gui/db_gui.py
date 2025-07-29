@@ -11,6 +11,7 @@ class DBPage(QWidget):
     def __init__(self,video_name):
         super().__init__()
         uic.loadUi("secondpage.ui", self)
+        self.setWindowTitle("Araç Veritabanı")
         self.setStyleSheet("""
             QWidget {
                 background-color: #384042;
@@ -155,7 +156,6 @@ class DBPage(QWidget):
 
     def gelismis(self):
         self.gelismis_page.show()
-
 
     def izlet(self):
         aracid = self.lineEdit.text()

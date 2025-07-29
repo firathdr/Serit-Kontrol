@@ -53,7 +53,7 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>330</x>
+     <x>360</x>
      <y>620</y>
      <width>111</width>
      <height>41</height>
@@ -66,7 +66,7 @@
   <widget class="QPushButton" name="pushButton_2">
    <property name="geometry">
     <rect>
-     <x>510</x>
+     <x>600</x>
      <y>620</y>
      <width>111</width>
      <height>41</height>
@@ -74,19 +74,6 @@
    </property>
    <property name="text">
     <string>Tekrar Oynat</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_3">
-   <property name="geometry">
-    <rect>
-     <x>680</x>
-     <y>620</y>
-     <width>111</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
    </property>
   </widget>
  </widget>
