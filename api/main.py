@@ -9,13 +9,13 @@ from functools import wraps
 import jwt
 from database.db_config import get_connection
 import bcrypt
+import pymysql
+from pymysql.cursors import DictCursor
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-app.config['SECRET_KEY'] = 'd4ea239a4b08d7e6e209a164ce7bf6c8'  # güçlü bir anahtar olsun
-
-
+app.config['SECRET_KEY'] = 'd4ea239a4b08d7e6e209a164ce7bf6c8'
 
 
 def token_required(f):
@@ -75,11 +75,12 @@ def login():
     # JWT token'ı düzgün format ile oluştur
     token = jwt.encode({
         'username': username,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=12)
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=12),
+        'name':user[1],
+        'role':user[4]
     }, app.config['SECRET_KEY'], algorithm="HS256")
 
     return jsonify({'token': token})  # access_token yerine token döndür
-
 
 
 @app.route('/api/araclar', methods=['GET'])
@@ -140,16 +141,23 @@ def delete_araclar(video_name,id):
     conn.commit()
     cursor.close()
     return jsonify({'status': 'ok'})
-@app.route('/api/itiraz_kayit', methods=['POST'])
+
+
+@app.route('/api/itiraz_kayit', methods=['GET'])
 @token_required
 def get_itiraz(current_user):
-    print(current_user)
-    conn=get_connection()
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(f'SELECT * FROM itiraz_kayit where username="{current_user}"')
-    data=cursor.fetchall()
+    cursor.execute('SELECT * FROM itiraz_kayit WHERE username=%s', (current_user,))
+    raw_data = cursor.fetchall() or []
+
+    columns = [desc[0] for desc in cursor.description]
+
+    data = [dict(zip(columns, row)) for row in raw_data]
+
     cursor.close()
     conn.close()
+    print(data)
     return jsonify({'data': data})
 
 
@@ -185,6 +193,157 @@ def itiraz_et(current_user):
 
 #@app.route('/api/kayit_izle/<int:arac_id>', methods=['POST'])
 #def kayit_izle(arac_id):               TODO: flask video stream araştır
+
+
+
+
+@app.route('/api/admin/kullanicilar', methods=['GET'])
+@token_required
+def get_all_users(current_user):
+    conn = get_connection()
+    cursor = conn.cursor(DictCursor)
+
+    cursor.execute("SELECT rol FROM kullanicilar WHERE username = %s", (current_user,))
+    result = cursor.fetchone()
+
+    if not result or result["rol"] != 'admin':
+        print("bura caliiyo")
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Admin yetkisi gerekli'}), 403
+
+    cursor.execute("SELECT id, isim, username, rol FROM kullanicilar")
+    users = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify({'kullanicilar': users}), 200
+
+@app.route('/api/admin/yetkilendir', methods=['POST'])
+@token_required
+def make_user_admin(current_user):
+    data = request.get_json()
+    hedef_kullanici = data.get('username')
+
+    conn = get_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    cursor.execute("SELECT rol FROM kullanicilar WHERE username = %s", (current_user,))
+    result = cursor.fetchone()
+    if not result or result["rol"] != "admin":
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Admin yetkisi gerekli'}), 403
+
+    cursor.execute("UPDATE kullanicilar SET rol = 'admin' WHERE username = %s", (hedef_kullanici,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    return jsonify({'message': f"{hedef_kullanici} artık admin."}), 200
+@app.route('/api/admin/kullanici-sil', methods=['DELETE'])
+@token_required
+def delete_user(current_user):
+    data = request.get_json()
+    hedef_kullanici = data.get('username')
+
+    conn = get_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    cursor.execute("SELECT rol FROM kullanicilar WHERE username = %s", (current_user,))
+    result = cursor.fetchone()
+    if not result or result["rol"] != "admin":
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Admin yetkisi gerekli'}), 403
+
+    if hedef_kullanici == current_user:
+        return jsonify({'message': 'Kendi hesabınızı silemezsiniz.'}), 400
+
+    cursor.execute("DELETE FROM kullanicilar WHERE username = %s", (hedef_kullanici,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    return jsonify({'message': f"{hedef_kullanici} silindi."}), 200
+
+@app.route('/api/admin/ihlaller', methods=['GET'])
+@token_required
+def get_all_violations(current_user):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(DictCursor)
+
+        cursor.execute("SELECT rol FROM kullanicilar WHERE username = %s", (current_user,))
+        result = cursor.fetchone()
+
+        if not result or result['rol'] != 'admin':
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Admin yetkisi gerekli'}), 403
+
+        cursor.execute('''
+            SELECT 
+                arac_goruntu.arac_id,
+                giris_zamani,
+                saat,
+                serit_id,
+                ihlal_durumu,
+                araclar.video_name,
+                kullanicilar.username
+            FROM araclar
+            INNER JOIN arac_goruntu ON araclar.arac_id = arac_goruntu.arac_id
+            LEFT JOIN itiraz_kayit ON araclar.arac_id = itiraz_kayit.arac_id
+            LEFT JOIN kullanicilar ON itiraz_kayit.username = kullanicilar.username
+            ORDER BY video_name
+        ''')
+
+        rows = cursor.fetchall()
+        return jsonify({'data': rows}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+import traceback
+
+@app.route('/api/admin/itirazlar', methods=['GET'])
+@token_required
+def get_all_itirazlar(current_user):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(DictCursor)
+
+        cursor.execute("SELECT rol FROM kullanicilar WHERE username = %s", (current_user,))
+        result = cursor.fetchone()
+        if not result or result["rol"] != "admin":
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Admin yetkisi gerekli'}), 403
+
+        cursor.execute('''
+            SELECT 
+                id,
+                username,
+                arac_id,
+                video_name,
+                durum,
+                sebep
+            FROM itiraz_kayit 
+        ''')
+        itirazlar = cursor.fetchall()
+
+        return jsonify({'data': itirazlar}), 200
+
+    except Exception as e:
+        traceback.print_exc()  # Hatanın tam stack trace'ini verir
+        return jsonify({'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 
