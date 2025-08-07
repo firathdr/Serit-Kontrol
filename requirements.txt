@@ -1,0 +1,12 @@
+flask
+flask-cors
+pyqt5
+opencv-python
+ultralytics
+pymysql
+bcrypt
+scikit-image==0.17.2
+filterpy==1.4.5
+lap==0.4.0
+numpy
+requests

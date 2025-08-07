@@ -36,13 +36,7 @@ Python 3.8+ ve pip gereklidir. (Tavsiye: Sanal ortam kullanın)
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # (Windows: .venv\\Scripts\\activate)
-pip install -r core/requirements.txt
-pip install -r api/requirements.txt
-```
-
-Ek olarak, PyQt5 ve diğer GUI bağımlılıklarını yükleyin:
-```bash
-pip install pyqt5 opencv-python
+pip install -r requirements.txt
 ```
 
 ### 2. Veritabanı Kurulumu
@@ -71,6 +65,7 @@ Staj/
 ├── videos/               # Test ve demo videoları
 ├── corridors/            # Şerit/corridor tanımları (JSON)
 ├── temp_clips/           # Geçici video klipleri
+├── requirements.txt      # Tüm bağımlılıklar burada
 ├── README.md             # Bu dosya
 └── ...                   # Diğer yardımcı dosyalar
 ```
