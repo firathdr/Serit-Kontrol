@@ -1,5 +1,5 @@
 import cv2
-from PyQt5.QtCore import QObject, pyqtSignal  # QObject ve pyqtSignal import edin
+from PyQt5.QtCore import QObject, pyqtSignal
 from database.ihlal_ekle import ihlal_ekle_db
 from database.db_config import get_connection
 
@@ -19,7 +19,7 @@ class Pipeline(QObject):
         self.basarili_gecisler = []
         self.ciz_status = ciz_status
         self.roi_mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-        if self.roi_mask is None:  # Maske dosyasının yüklendiğini kontrol edin
+        if self.roi_mask is None:
             pass
         else:
             if self.roi_mask.max() > 1:
@@ -73,7 +73,7 @@ class Pipeline(QObject):
 
             for idx, corridor in enumerate(self.yol_secim.corridors):
                 if not hasattr(corridor, "id"):
-                    corridor.id = idx + 1  # Eğer corridor objesi id'ye sahip değilse atarız
+                    corridor.id = idx + 1
 
             if len(self.yol_secim.corridors) > 0:
                 if track_id in self.track_memory:
@@ -84,8 +84,7 @@ class Pipeline(QObject):
                             if track_id not in corridor.entered_ids:
                                 corridor.entered_ids.add(track_id)
                                 giris_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                                # print(f"{track_id} girişini {corridor.id} yoluna yaptı")
-                                #roi = frame[round(y1/2):round(y2*2), round(x1/2):round(x2*2)]
+
                                 roi = frame[y1:y2, x1:x2]
                                 retval, buffer = cv2.imencode('.jpg', roi)
                                 image_bytes = buffer.tobytes()
@@ -97,7 +96,6 @@ class Pipeline(QObject):
                                     conn.commit()
                                     cursor.close()
                                     conn.close()
-                                    #print(f"TrackID {track_id} için görüntü veritabanına kaydedildi.")
                                 except Exception as e:
                                     print(f"Görüntü DB kaydetme hatası: {e}")
 
@@ -105,7 +103,6 @@ class Pipeline(QObject):
                         if track_id in corridor.entered_ids and track_id not in corridor.exited_ids:
                             if self.yol_secim.is_crossing_line((cx, cy), (prev_cx, prev_cy), corridor.exit_line):
                                 corridor.exited_ids.add(track_id)
-                                # print(f"{track_id} çıkışını {corridor.id} yoluna yaptı")
                                 gecis_zamani = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
                                 basarili_gecis = {
                                     "track_id": track_id,
@@ -148,7 +145,6 @@ class Pipeline(QObject):
 
                             ihlal_text.append(f"İhlal: ID {entered_id} @ {ihlal_zamani:.2f}s (Koridor: {corridor.id})")
                             ihlal_ekle_db(ihlal_data['track_id'], ihlal_data['time_seconds'], ihlal_data['corridor_id'], ihlal_data['ihlal_durum'],ihlal_data['video_name'])
-                            # print(f"İhlal: {entered_id} @ {ihlal_zamani:.2f}s (Corridor ID: {corridor.id})")
 
         if ihlal_text:
             self.ihlal_detected_signal.emit(ihlal_text)

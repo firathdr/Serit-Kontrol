@@ -8,7 +8,7 @@ class KeyboardController:
         self.speech_enabled = True
         self.paused = False
         self.draw_lines = False
-
+####SİLİNEBİLİR DOSYA
     def check_key(self):
         key = cv2.waitKey(1) & 0xFF
 

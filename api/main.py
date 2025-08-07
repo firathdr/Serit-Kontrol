@@ -78,7 +78,7 @@ def login():
         'role':user[4]
     }, app.config['SECRET_KEY'], algorithm="HS256")
 
-    return jsonify({'token': token})  # access_token yerine token döndür
+    return jsonify({'token': token})
 
 @app.route('/api/araclar', methods=['GET'])
 @token_required
@@ -160,17 +160,27 @@ def delete_araclar(current_user,video_name,id):
 def get_itiraz(current_user):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM itiraz_kayit WHERE username=%s', (current_user,))
+    cursor.execute('''
+        SELECT ik.*, ag.giris_zamani AS arac_giris_zamani, a.saat AS arac_cikis_zamani
+        FROM itiraz_kayit ik
+        LEFT JOIN arac_goruntu ag ON ik.arac_id = ag.arac_id AND ik.video_name = ag.video_name
+        LEFT JOIN araclar a ON ik.arac_id = a.arac_id AND ik.video_name = a.video_name
+        WHERE ik.username=%s
+    ''', (current_user,))
     raw_data = cursor.fetchall() or []
-
     columns = [desc[0] for desc in cursor.description]
-
     data = [dict(zip(columns, row)) for row in raw_data]
-
+    filtered_data = [d for d in data if d.get('arac_giris_zamani') != d.get('arac_cikis_zamani')]
+    unique = {}
+    for d in sorted(filtered_data, key=lambda x: x['id'], reverse=True):
+        key = (d['arac_id'], d['video_name'])
+        if key not in unique:
+            unique[key] = d
+    final_data = list(unique.values())
     cursor.close()
     conn.close()
-    print(data)
-    return jsonify({'data': data})
+    print(final_data)
+    return jsonify({'data': final_data})
 
 
 @app.route('/api/itiraz_et', methods=["POST"])
@@ -329,37 +339,38 @@ def get_all_itirazlar(current_user):
             return jsonify({'message': 'Admin yetkisi gerekli'}), 403
 
         cursor.execute("""
-SELECT
-    ik.id,
-    ik.username,
-    ik.arac_id,
-    ik.video_name,
-    ik.durum,
-    ik.sebep,
-    ag.giris_zamani AS arac_giris_zamani,
-    a.saat          AS arac_cikis_zamani,
-    ag.goruntu      AS arac_goruntu,
-    a.serit_id,
-    a.ihlal_durumu
-FROM itiraz_kayit ik
-LEFT JOIN araclar a ON ik.arac_id = a.id -- 'araclar.id' araclar tablosunun PK'sı ise bu doğru
-LEFT JOIN (
-    SELECT
-        ag1.arac_id,
-        ag1.goruntu,
-        ag1.giris_zamani,
-        -- Her arac_id için giris_zamani'na göre azalan, sonra id'ye göre azalan sıra numarası ver
-        ROW_NUMBER() OVER (PARTITION BY ag1.arac_id ORDER BY ag1.giris_zamani DESC, ag1.id DESC) as rn
-    FROM arac_goruntu ag1
-) ag ON ik.arac_id = ag.arac_id AND ag.rn = 1; -- Sadece 1. sıra numarasına sahip kaydı seç                       """)
+                       SELECT ik.id,
+                              ik.username,
+                              ik.arac_id,
+                              ik.video_name,
+                              ik.durum,
+                              ik.sebep,
+                              ag.giris_zamani AS arac_giris_zamani,
+                              a.saat          AS arac_cikis_zamani,
+                              ag.goruntu      AS arac_goruntu,
+                              a.serit_id,
+                              a.ihlal_durumu
+                       FROM itiraz_kayit ik
+                                LEFT JOIN arac_goruntu ag ON ik.arac_id = ag.arac_id AND ik.video_name = ag.video_name
+                                LEFT JOIN araclar a ON ik.arac_id = a.arac_id AND ik.video_name = a.video_name;
+                       """)
 
         itirazlar = cursor.fetchall()
 
-        for itiraz in itirazlar:
+        filtered_itirazlar = [itiraz for itiraz in itirazlar if itiraz['arac_giris_zamani'] != itiraz['arac_cikis_zamani']]
+
+        unique = {}
+        for itiraz in sorted(filtered_itirazlar, key=lambda x: x['id'], reverse=True):
+            key = (itiraz['arac_id'], itiraz['video_name'])
+            if key not in unique:
+                unique[key] = itiraz
+        final_itirazlar = list(unique.values())
+
+        for itiraz in final_itirazlar:
             if itiraz['arac_goruntu'] is not None:
                 itiraz['arac_goruntu'] = base64.b64encode(itiraz['arac_goruntu']).decode('utf-8')
 
-        return jsonify({'data': itirazlar}), 200
+        return jsonify({'data': final_itirazlar}), 200
 
     except Exception as e:
         import traceback
@@ -375,55 +386,50 @@ LEFT JOIN (
 @token_required
 def guncelle_itiraz_durumu(current_user):
     try:
-        data = request.json
-        username = data.get("username")
-        arac_id = data.get("arac_id")
-        video_name = data.get("video_name")
-        durum = data.get("durum")
-
-        if not all([username, arac_id, video_name, durum]):
-            return jsonify({"error": "Eksik parametre"}), 400
+        data = request.get_json()
+        username = data['username']
+        arac_id = data['arac_id']
+        video_name = data['video_name']
+        yeni_durum = data['durum']  # 'onaylandi' veya 'reddedildi'
 
         conn = get_connection()
         cursor = conn.cursor()
 
+        # SADECE itiraz_durumu alanını güncelle
         cursor.execute("""
-            SELECT * FROM itiraz_kayit
-            WHERE username = %s AND arac_id = %s AND video_name = %s
-        """, (username, arac_id, video_name))
-        itiraz = cursor.fetchone()
-
-        if not itiraz:
-            return jsonify({"error": "İtiraz bulunamadı"}), 404
-
-        cursor.execute("""
-            UPDATE itiraz_kayit 
-            SET itiraz_durumu = %s 
-            WHERE username = %s AND arac_id = %s AND video_name = %s
-        """, (durum, username, arac_id, video_name))
-
-        if durum == "Kabul Edildi":
-            cursor.execute("""
-                UPDATE ihlal_kayit 
-                SET ihlal = 0 
-                WHERE username = %s AND arac_id = %s AND video_name = %s
-            """, (username, arac_id, video_name))
+                       UPDATE itiraz_kayit
+                       SET itiraz_durumu = %s
+                       WHERE username = %s
+                         AND arac_id = %s
+                         AND video_name = %s
+                       """, (yeni_durum, username, arac_id, video_name))
 
         conn.commit()
-        return jsonify({"message": "İtiraz durumu başarıyla güncellendi."}), 200
+
+        # Güncellenmiş veriyi döndür
+        cursor.execute("""
+                       SELECT *
+                       FROM itiraz_kayit
+                       WHERE username = %s
+                         AND arac_id = %s
+                         AND video_name = %s
+                       """, (username, arac_id, video_name))
+
+        updated_record = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "itiraz_durumu": updated_record[6]  # 6. sütun itiraz_durumu
+            }
+        }), 200
 
     except Exception as e:
-        print("Sunucu hatası:", e)
+        conn.rollback()
         return jsonify({"error": str(e)}), 500
-
     finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-
+        cursor.close()
+        conn.close()
 
 
 @app.route('/api/videos/<video_name>')
@@ -446,8 +452,8 @@ def serve_video_clip(video_name):
         command = [
             'ffmpeg',
             '-i', input_path,
-            '-ss', start,
-            '-to', end,
+            '-ss', str(int(start)-10),
+            '-to', str(int(start)+5),
             '-c', 'copy',
             output_path,
             '-y'
@@ -466,7 +472,6 @@ def serve_video_clip(video_name):
 
 @app.route('/api/itiraz_kayit/detay', methods=['GET'])
 def get_itiraz_detay():
-    # URL query parametrelerini al
     username = request.args.get('username')
     arac_id = request.args.get('arac_id')
     video_name = request.args.get('video_name')
@@ -488,31 +493,25 @@ def get_itiraz_detay():
     try:
         query = """
                 SELECT
-                    ik.id,
-                    ik.username,
-                    ik.arac_id,
-                    ik.video_name,
-                    ik.durum,
-                    ik.sebep,
-                    ik.itiraz_durumu,
-                    ag.giris_zamani AS arac_giris_zamani,
-                    a.saat AS arac_cikis_zamani,
-                    ag.goruntu AS arac_goruntu,
-                    a.serit_id,
-                    a.ihlal_durumu
-                FROM itiraz_kayit ik
-                LEFT JOIN araclar a ON ik.arac_id = a.id AND ik.video_name = a.video_name
-                LEFT JOIN (
-                    SELECT
-                        ag1.arac_id,
-                        ag1.goruntu,
-                        ag1.giris_zamani,
-                        ROW_NUMBER() OVER (PARTITION BY ag1.arac_id ORDER BY ag1.giris_zamani DESC, ag1.id DESC) as rn
-                    FROM arac_goruntu ag1
-                ) ag ON ik.arac_id = ag.arac_id AND ag.rn = 1
-                WHERE ik.username = %s
-                  AND ik.arac_id = %s
-                  AND ik.video_name = %s;
+    ik.id,
+    ik.username,
+    ik.arac_id,
+    ik.video_name,
+    ik.durum,
+    ik.sebep,
+    ik.itiraz_durumu,
+    ag.giris_zamani AS arac_giris_zamani,
+    a.saat AS arac_cikis_zamani,
+    ag.goruntu AS arac_goruntu,
+    a.serit_id,
+    a.ihlal_durumu
+FROM itiraz_kayit ik
+LEFT JOIN arac_goruntu ag ON ik.arac_id = ag.arac_id AND ik.video_name = ag.video_name
+LEFT JOIN araclar a ON ik.arac_id = a.arac_id AND ik.video_name = a.video_name
+WHERE ik.username = %s
+  AND ik.arac_id = %s
+  AND ik.video_name = %s;
+
                 """
 
         cursor.execute(query, (username, arac_id, video_name))
@@ -521,11 +520,9 @@ def get_itiraz_detay():
         if not itiraz_detay:
             return jsonify({"error": "Belirtilen itiraz detayı bulunamadı."}), 404
 
-        # Binary görüntüyü base64'e çevir
         if itiraz_detay.get('arac_goruntu') is not None:
             itiraz_detay['arac_goruntu'] = base64.b64encode(itiraz_detay['arac_goruntu']).decode('utf-8')
 
-        # Zaman bilgilerini string'e çevir
         datetime_fields = ['arac_giris_zamani', 'arac_cikis_zamani']
         for field in datetime_fields:
             if itiraz_detay.get(field) is not None:

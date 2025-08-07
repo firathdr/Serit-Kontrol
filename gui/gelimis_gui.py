@@ -69,7 +69,7 @@ class DBPG(QWidget):
             self.connection = get_connection()
             cursor = self.connection.cursor()
 
-            query=["TRUNCATE TABLE araclar","TRUNCATE TABLE arac_goruntu"]
+            query=["TRUNCATE TABLE araclar","TRUNCATE TABLE arac_goruntu","TRUNCATE TABLE itiraz_kayit"]
             for q in query:
                 cursor.execute(q)
             self.connection.commit()
