@@ -1,6 +1,8 @@
 # Şerit Kontrol Sistemi
 
-Bu proje, video tabanlı araç tespiti, şerit ihlali analizi ve kullanıcı arayüzü ile yönetim sağlayan bütünleşik bir sistemdir. Hem masaüstü (PyQt5 GUI) hem de web tabanlı (Flask API) bileşenleri içerir.
+Bu proje, video tabanlı araç tespiti, şerit ihlali analizi ve kullanıcı arayüzü ile yönetim sağlayan bütünleşik bir sistemdir. Hem masaüstü (PyQt5 GUI) hem de web tabanlı (Flask API) bileşenleri içerir. Sistem PyQt Arayüzü üzerinden video ve şerit seçerek çalıştırılır. Seçilen şeritler içinde araç tanıma ile araçların kaydı tutulur ve belirlenen kural dışında şerit geçişi yapan araçlar otomatik olarak ihlal damgası ile veritabanına kayıt edilir.
+Sistemde ihlaller hem PyQt arayüzünde hemde websitesinde görüntülenebilir. Kullanıcılar yapılan itiraza sebep belirterek websitesi üzerinden itiraz edebilir.
+Admin kullanıcı yapılan itirazları değerlendirir aracın kaydını izleyebilir ve itirazı onaylayarak ihlal damgasını kaldırabilir.
 
 ## İçerik
 
