@@ -21,6 +21,11 @@ Web arayüzü ayrı depodadır: [Serit-Kontrol-Web](https://github.com/firathdr/
 | --- | --- |
 | ![Veritabanı ekranı](docs/screenshots/veritabani.webp) | ![Oynatıcı ekranı](docs/screenshots/oynatici.webp) |
 
+Aynı kayıtlar Flask API üzerinden web paneline de açılıyor; sürücü buradan ihlale
+itiraz edebiliyor:
+
+![Web paneli araç listesi](docs/screenshots/web-panel.webp)
+
 ## Nasıl çalışır
 
 1. **Maske** — `masks/` altındaki ikili maske, karenin yalnızca yol kısmını
