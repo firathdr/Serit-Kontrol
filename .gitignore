@@ -1,8 +1,27 @@
+# Sanal ortam
 .venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editör
+.idea/
+.vscode/
+
+# Büyük ikili varlıklar (demo videosu ve model ağırlıkları depoda tutulmaz)
 videos/*.mp4
 !videos/.gitkeep
 models/*.pt
 !models/.gitkeep
+
+# Çalışma zamanında üretilenler
+data/
+temp_clips/
+
+# Yerel yapılandırma
+database/mysql.json
+
 version_test.py
 core/deep_sort_pytorch
-database/mysql.json
