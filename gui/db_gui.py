@@ -73,7 +73,7 @@ class DBPage(QWidget):
         try:
             self.connection = get_connection()
             cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM araclar where video_name = '{}'".format(self.video_name))
+            cursor.execute("SELECT * FROM araclar WHERE video_name = %s", (self.video_name,))
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             self.tableWidget.setRowCount(len(rows))
@@ -132,7 +132,7 @@ class DBPage(QWidget):
                 for col_idx, col_data in enumerate(row_data):
                     item = QTableWidgetItem(str(col_data))
                     self.tableWidget.setItem(row_idx, col_idx, item)
-            cursor.execute(f"SELECT goruntu FROM arac_goruntu WHERE arac_id = %s and video_name=%s", (aracid,self.video_name))
+            cursor.execute("SELECT goruntu FROM arac_goruntu WHERE arac_id = %s AND video_name = %s", (aracid, self.video_name))
             row = cursor.fetchone()
             label = self.findChild(QLabel, "arac_resim")
             label_width = label.width()
