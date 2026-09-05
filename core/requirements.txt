@@ -1,3 +1,5 @@
+# Yalnızca core/sort.py (alternatif SORT takipçisi) için gereken ek paketler.
+# Ana kurulum için kök dizindeki requirements.txt yeterlidir.
 filterpy==1.4.5
 scikit-image==0.17.2
 lap==0.4.0

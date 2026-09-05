@@ -1,12 +1,21 @@
+# Arayüz
+pyqt5
+pillow
+
+# Görüntü işleme, tespit ve takip
+opencv-python
+numpy
+ultralytics
+deep-sort-realtime
+
+# Web API
 flask
 flask-cors
-pyqt5
-opencv-python
-ultralytics
-pymysql
+pyjwt
 bcrypt
-scikit-image==0.17.2
-filterpy==1.4.5
-lap==0.4.0
-numpy
-requests
+
+# Veritabanı: SQLite standart kütüphanede gelir, bu yalnızca MySQL için gerekir
+pymysql
+
+# Not: core/sort.py (kullanılmayan alternatif takip algoritması) için ek olarak
+# core/requirements.txt kurulmalıdır.
