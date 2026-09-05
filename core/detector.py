@@ -1,10 +1,18 @@
+import torch
 from ultralytics import YOLO
 
+
+def varsayilan_cihaz():
+    """CUDA varsa GPU, yoksa CPU. Sabit "cuda" olan surum GPU'suz makinede
+    caliasmiyordu."""
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
 class ObjectDetector:
-    def __init__(self, model_path: str, device: str = "cuda"):
+    def __init__(self, model_path: str, device: str = None):
         self.model = YOLO(model_path)
         self.names = self.model.names
-        self.device = device
+        self.device = device or varsayilan_cihaz()
 
     def detect(self, frame, conf: float = 0.3, imgsz=640, iou=0.5):
         results = self.model.predict(
