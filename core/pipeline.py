@@ -6,8 +6,15 @@ from database.db_config import get_connection
 
 class Pipeline(QObject):
     ihlal_detected_signal = pyqtSignal(list)
-    def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici, ciz_status):
+    def __init__(self, model_path, mask_path, video_path, detector, tracker, yol_secici, ciz_status,
+                 conf=0.3, imgsz=1280, iou=0.42):
         super().__init__()
+        # Tespit ayarlari. imgsz varsayilani 640 iken 1080p kamera goruntusunde
+        # uzaktaki araclar kaciriliyordu; 1280 belirgin sekilde daha fazlasini
+        # yakaliyor ve maliyeti bu goruntu boyutunda neredeyse ayni.
+        self.conf = conf
+        self.imgsz = imgsz
+        self.iou = iou
         self.detector = detector
         self.tracker = tracker
         self.yol_secim = yol_secici
@@ -40,7 +47,7 @@ class Pipeline(QObject):
             self.roi_mask = cv2.resize(self.roi_mask, (frame.shape[1], frame.shape[0]), interpolation=cv2.INTER_NEAREST)
         masked_frame = cv2.bitwise_and(frame, frame, mask=self.roi_mask)
 
-        results = self.detector.detect(masked_frame, conf=0.3, imgsz=640, iou=0.42)
+        results = self.detector.detect(masked_frame, conf=self.conf, imgsz=self.imgsz, iou=self.iou)
 
         detections = []
         for result in results:
