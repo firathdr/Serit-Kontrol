@@ -1,7 +1,9 @@
+from pathlib import Path
+
 from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QLabel
 from PyQt5 import uic, QtCore
 from database.db_config import get_connection
-from gelimis_gui import DBPG
+from gui.gelimis_gui import DBPG
 from gui.video_player import DBVideo
 from PyQt5.QtGui import QPixmap
 from PIL import Image
@@ -10,7 +12,7 @@ import io
 class DBPage(QWidget):
     def __init__(self,video_name):
         super().__init__()
-        uic.loadUi("secondpage.ui", self)
+        uic.loadUi(str(Path(__file__).resolve().parent / "secondpage.ui"), self)
         self.setWindowTitle("Araç Veritabanı")
         self.setStyleSheet("""
             QWidget {

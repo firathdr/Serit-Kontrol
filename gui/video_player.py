@@ -1,15 +1,20 @@
+from pathlib import Path
+
 from PyQt5.QtWidgets import QWidget, QLabel
 from PyQt5 import uic, QtGui, QtCore
 from database.db_config import get_connection
 import cv2
 import numpy as np
 
+GUI_DIR = Path(__file__).resolve().parent
+VIDEOS_DIR = GUI_DIR.parent / "videos"
+
 class DBVideo(QWidget):
     def __init__(self, arac_id, video_name):
         super().__init__()
         self.arac_id = arac_id
         self.path_video = video_name
-        uic.loadUi("player.ui", self)
+        uic.loadUi(str(GUI_DIR / "player.ui"), self)
         self.paused = False
         self.label: QLabel = self.findChild(QLabel, "video_label")
 
@@ -53,9 +58,10 @@ class DBVideo(QWidget):
 
         self.start_sec = giris[0]
         self.end_sec = saat[0]
-        self.cap = cv2.VideoCapture("../videos/" + self.path_video + ".mp4")
+        video_path = VIDEOS_DIR / f"{self.path_video}.mp4"
+        self.cap = cv2.VideoCapture(str(video_path))
         if not self.cap.isOpened():
-            print(f"Hata: Video dosyası açılamadı: ../videos/{self.path_video}.mp4")
+            print(f"Hata: Video dosyası açılamadı: {video_path}")
             self.cap = None
             return
 

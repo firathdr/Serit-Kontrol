@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QLineEdit, QLabel
 from PyQt5 import uic
 
@@ -6,7 +8,7 @@ from database.db_config import get_connection
 class DBPG(QWidget):
     def __init__(self):
         super(QWidget, self).__init__()
-        uic.loadUi("gelismis_duzenleme.ui", self)
+        uic.loadUi(str(Path(__file__).resolve().parent / "gelismis_duzenleme.ui"), self)
         self.pushButton.clicked.connect(self.where_sorgu)
         self.pushButton_2.clicked.connect(self.kaydi_sil)
         self.pushButton_3.clicked.connect(self.item_changed)

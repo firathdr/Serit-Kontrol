@@ -1,3 +1,14 @@
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if __package__ in (None, ""):
+    # "python api/main.py" ile dogrudan calistirildiginda proje kokunu ekle.
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+VIDEOS_DIR = PROJECT_ROOT / "videos"
+TEMP_CLIPS_DIR = PROJECT_ROOT / "temp_clips"
+
 from flask_cors import CORS, cross_origin
 import base64
 import datetime
@@ -437,17 +448,14 @@ def serve_video_clip(video_name):
     start = request.args.get('start')
     end = request.args.get('end')
 
-    input_path = os.path.join(f'../videos/{video_name}.mp4')
-
-    output_filename = f"clip_{video_name}"
-    output_path = f"../temp_clips/clip_{video_name}.mp4"
+    input_path = str(VIDEOS_DIR / f"{video_name}.mp4")
+    output_path = str(TEMP_CLIPS_DIR / f"clip_{video_name}.mp4")
 
     try:
         if not os.path.exists(input_path):
             return jsonify({"error": "Video not found"}), 404
 
-        if not os.path.exists('temp_clips'):
-            os.makedirs('temp_clips')
+        TEMP_CLIPS_DIR.mkdir(exist_ok=True)
 
         command = [
             'ffmpeg',
