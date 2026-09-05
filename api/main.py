@@ -55,7 +55,9 @@ def register():
     username = data['username']
     password = data['password']
     rol="kullanici"
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    # Hash metin olarak saklanir: SQLite bytes veriyi BLOB olarak geri verdigi
+    # icin girişte tip uyusmazligi olusuyordu.
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     conn=get_connection()
     cursor = conn.cursor()
@@ -79,7 +81,11 @@ def login():
     if user is None:
         return jsonify({'status': 'kullanici bulunamadi'}), 401
 
-    if not bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+    kayitli_parola = user[3]
+    if isinstance(kayitli_parola, str):
+        kayitli_parola = kayitli_parola.encode('utf-8')
+
+    if not bcrypt.checkpw(password.encode('utf-8'), kayitli_parola):
         return jsonify({'message': 'Geçersiz şifre!'}), 401
 
     token = jwt.encode({
